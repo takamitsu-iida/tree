@@ -9,10 +9,14 @@ import sys
 class TreeNode:
 
     def __init__(self, node_name="", *children):
+
+        # ノードを識別する名前
         self.node_name = node_name
 
+        # 親ノードへのポインタ
         self.parent = None
 
+        # コンストラクタで子ノードを渡されたら、それを子ノードとして設定する
         if children:
             self.children = children
             for child in self.children:
@@ -20,8 +24,11 @@ class TreeNode:
         else:
             self.children = []
 
+        # ノードの位置情報
         self.x: int = 0
         self.y: int = 0
+
+        # ツリーの深さ
         self.depth: int = 0
 
         # このノード配下のサブツリー全体を左右に移動させるための変数
@@ -33,7 +40,7 @@ class TreeNode:
     #
 
     def is_leaf(self) -> bool:
-        return all(child is None for child in self.children)
+        return all(len(child) == 0 for child in self.children)
 
     def is_root(self) -> bool:
         return self.parent is None
@@ -44,40 +51,38 @@ class TreeNode:
         return self.parent.children[0] == self
 
     def is_right_most(self) -> bool:
-        if self.parent is None:
-            return False
+        if self.is_root():
+            return True
         return self.parent.children[-1] == self
 
     def get_siblings(self) -> list:
-        siblings = []
-        for child in self.parent.children:
-            if child != self:
-                siblings.append(child)
-        return siblings
+        if self.is_root():
+            return []
+        return [child for child in self.parent.children if child != self]
 
     def get_previous_sibling(self) -> 'TreeNode':
-        if self.parent is None:
+        if self.is_root():
             return None
         if self.is_left_most():
             return None
         return self.parent.children[self.parent.children.index(self) - 1]
 
     def get_next_sibling(self) -> 'TreeNode':
-        if self.parent is None:
+        if self.is_root():
             return None
         if self.is_right_most():
             return None
         return self.parent.children[self.parent.children.index(self) + 1]
 
     def get_left_most_sibling(self) -> 'TreeNode':
-        if self.parent is None:
+        if self.is_root():
             return None
         if self.is_left_most():
             return self
         return self.parent.children[0]
 
     def get_right_most_sibling(self) -> 'TreeNode':
-        if self.parent is None:
+        if self.is_root():
             return None
         if self.is_right_most():
             return self
