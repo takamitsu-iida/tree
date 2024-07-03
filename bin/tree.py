@@ -25,22 +25,22 @@ class TreeNode:
             self.children = []
 
         # ノードの位置情報
-        self.x: int = 0
-        self.y: int = 0
+        self.x: float = 0.0
+        self.y: float = 0.0
 
         # ツリーの深さ
         self.depth: int = 0
 
         # このノード配下のサブツリー全体を左右に移動させるための変数
         # ツリーの探索回数を減らすために、この変数を使ってノードの位置を調整し、最後にまとめて位置を修正する
-        self.mod: int = 0
+        self.mod: float = 0.0
 
     #
     # ツリーを操作するヘルパー関数
     #
 
     def is_leaf(self) -> bool:
-        return all(len(child) == 0 for child in self.children)
+        return len(self.children) == 0
 
     def is_root(self) -> bool:
         return self.parent is None
@@ -99,7 +99,7 @@ class TreeNode:
         return self.children[-1]
 
     #
-    #
+    # 特殊メソッド
     #
 
     def __str__(self):
@@ -143,7 +143,16 @@ def postorder(root: TreeNode):
     yield root
 
 
-def initialize_tree_preorder(root: TreeNode, depth: int = 0):
+def calc_y_preorder(root: TreeNode, depth: int = 0):
+    """preorderトラバーサルでノードの深さを求めてY座標を各ノードに設定します
+
+    X座標を決める最後のpreorderトラバーサルで処理することもできるが、
+    分かりやすさのために別関数にしている
+
+    Args:
+        root (TreeNode): _description_
+        depth (int, optional): _description_. Defaults to 0.
+    """
     if root == None:
         return
 
@@ -151,15 +160,32 @@ def initialize_tree_preorder(root: TreeNode, depth: int = 0):
     # preorder処理
     #
 
-    # 深さを計算して設定
+    # 深さをノードに設定
     root.depth = depth
+
+    # Y座標は深さと同じものを設定
+    # 見栄えを調整するときに変更すればよい
     root.y = depth
 
     for child in root.children:
-        initialize_tree_preorder(child, depth + 1)
+        calc_y_preorder(child, depth + 1)
 
 
 def calc_x_postorder(node: TreeNode):
+    """postorderトラバーサルで探索してノードのサブツリーが重ならないようにX座標を設定します
+
+    基本的な考え方はreingold-tilfordアルゴリズムに基づいています。
+    ツリーの最下部から上に遡りながらX座標を設定していくので、
+    子ノードの位置はすでに設定されている前提で処理します。
+    兄弟ノードにおいては、一番左のノードを基準に一定間隔で並べていきます。
+    自分よりも左にいる兄弟ノードとの重なりを解消する処理を行いますが、
+    自分が右に動いたとき、自分の配下のサブツリーも同じ距離移動させる必要がありますが、
+    その都度、サブツリーを探索するのは効率が悪いので、
+    自分自身のmod変数に移動すべき量を記録しておいて、最後にまとめてサブツリーを移動させます。
+
+    Args:
+        node (TreeNode): _description_
+    """
     if node == None:
         return
 
@@ -170,73 +196,96 @@ def calc_x_postorder(node: TreeNode):
     # postorder処理
     #
 
-    if node.is_leaf():
-        # 子がいないとき
+    #
+    # 子がいない場合
+    #
+    if len(node.children) == 0:
         if node.is_left_most():
-            # これが兄弟ノードの一番左ならX軸方向の位置は0に初期化
+            # 自分が兄弟ノードの一番左ならX軸方向の位置は0に初期化
             node.x = 0
         else:
             # 左の兄弟のX座標+1に初期化
             node.x = node.get_previous_sibling().x + 1
 
-    elif len(node.children) == 1:
-        # 子が一つしかない場合
+        # サブツリーが存在しないので処理終了
+        return
+
+    #
+    # 子が一つの場合
+    #
+    if len(node.children) == 1:
+
         if node.is_left_most():
-            # これが兄弟ノードの一番左なら、これが兄弟における基準位置になる
+            # 自分が兄弟ノードの一番左なら、自分が兄弟たちの基準位置になる
             # X軸方向の位置は子に合わせればよい
+            # 子の位置は変わらないのでmodは設定しなくてよい
             node.x = node.children[0].x
         else:
-            # 一番左ではないなら、左の隣のX座標に+1
+            # 左隣のX座標に+1
             node.x = node.get_previous_sibling().x + 1
 
-            # 自分配下のサブツリーを動かしたいので、modに差分を設定しておく
+            # 子は一つなので自分と子のX座標を一致させたい
+            # 自分が右に移動してしまったので、子も移動させるが、
+            # 子の配下のサブツリー全体を移動させるのは大変なのでmodに移動すべき量を記録しておいて最後に移動する
             node.mod = node.x - node.children[0].x
 
+    #
+    # 子が複数ある場合
+    #
     else:
-        # 子が複数ある場合
-        left_child = node.get_left_most_child()
-        right_child = node.get_right_most_child()
-        center_x = (left_child.x + right_child.x) / 2
+
+        left_most_child = node.get_left_most_child()
+        right_most_child = node.get_right_most_child()
+        center_x = (left_most_child.x + right_most_child.x) / 2
 
         if node.is_left_most():
-            # これが兄弟ノードの一番左なら、これが兄弟における基準位置になる
-            # X軸方向の位置は子の中央に初期化
+            # 自分自身が兄弟ノードの一番左なら、自分は兄弟における基準位置になる
+            # 自分の位置は子の中央に初期化する
             node.x = center_x
         else:
-            # 一番左ではないなら、左隣のX座標に+1
+            # 一番左でないなら、左隣のX座標に+1する
             node.x = node.get_previous_sibling().x + 1
 
-            # 自分配下のサブツリーを動かす量
+            # 自分配下のサブツリーを動かす量をmodに記録しておく
+            # 子の中央が自分になってほしいので、自分に対して子の中央がどれだけずれているかを記録する
             node.mod = node.x - center_x
 
-    # 親子の位置関係は正しく設定されているものの、サブツリー同士の重なりは解決できていない
-    # 一番左のサブツリーであれば、それが基準なのでそのままでよいが、そうでなければ、必要なだけ右にずらす
+    # この時点では、親子の位置関係は正しく設定されているものの、
+    # サブツリー同士の重なりは解決できていない
+    # 自分が一番左のサブツリーであれば、それが基準なのでそのままでよいが、
+    # そうでなければ、必要なだけ右にずらす
     if len(node.children) > 0 and node.is_left_most() == False:
         fix_conflicts(node)
 
 
 def fix_conflicts(node: TreeNode):
 
+    # サブツリー間にどれだけの最小距離を保つか
     min_distance = 1
 
-    # 各階層において、その階層における最小のX座標を記録する（このノードの左輪郭を調べる）
-    node_contour = {}
-    get_left_contour(node, 0, node_contour)
+    # このノードの左輪郭を求める
+    # 各階層における最小のX座標を記録したいので{ depth: x } の形で保持する
+    node_left_contour = {}
+    get_left_contour(node, 0, node_left_contour)
 
-    # 自分よりも左にいる兄弟ノードを、左から順番に調べていく
+    # 自分よりも左にいる兄弟ノードとの重なり合いを順番に調べていく
+    # 自分よりも右側にいる兄弟は、あとで処理するので考慮しない
     shift_value = 0
     sibling = node.get_left_most_sibling()
+
+    # 左端から、自分の左隣りまでの兄弟に関して、
     while sibling != None and sibling != node:
-        # その右輪郭を調べる
-        sibling_contour = {}
-        get_right_contour(sibling, 0, sibling_contour)
 
-        # 全ての深さで重なりをチェックする必要はない
-        # 深さの短い方を取って、それだけをチェックすればよい
-        min_depth = min(max(node_contour.keys()), max(sibling_contour.keys()))
+        # その兄弟の右輪郭を調べる
+        sibling_right_contour = {}
+        get_right_contour(sibling, 0, sibling_right_contour)
 
+        # 全ての深さで重なりをチェックしてもいいが、片方が存在しない深さはチェックしても無駄になる
+        # 深さの短い方を取って、その深さまでをチェックする
+        # 辞書型で作成したcontourはキーが深さなので、キーの最大値を取れば深さの最大値がわかる
+        min_depth = min(max(node_left_contour.keys()), max(sibling_right_contour.keys()))
         for depth in range(node.depth + 1, min_depth + 1):
-            distance = node_contour[depth] - sibling_contour[depth]
+            distance = node_left_contour[depth] - sibling_right_contour[depth]
             if distance + shift_value < min_distance:
                 shift_value = min_distance - distance
 
@@ -247,22 +296,32 @@ def fix_conflicts(node: TreeNode):
             # サブツリーはあとでまとめて修正するのでmodにずらした量を加算しておく
             node.mod += shift_value
 
-            # 自分を右にずらしたので、その間にいる兄弟達も均等にずらす
-            center_nodes_between(sibling, node)
-
             # ずらし終わったので移動量をリセット
             shift_value = 0
 
-            # 間にいる兄弟をずらしたことで重なりが発生するかもしれないので、再度確認する
-            fix_conflicts(node)
+            # 自分が右に移動したので、その間にいる兄弟達の位置を均等化する
+            is_moved = center_nodes_between(sibling, node)
+
+            if is_moved:
+                # 間にいる兄弟が自分に寄ってきたことで重なりが発生するかもしれないので
+                # 繰り返し確認して、自分よりも左側に重複がないことを担保する
+                fix_conflicts(node)
 
         # 次の兄弟ノードとの間に重なりがあるかどうかを調べる
         sibling = sibling.get_next_sibling()
 
 
 
-def center_nodes_between(left_sibling: TreeNode, right_sibling: TreeNode):
+def center_nodes_between(left_sibling: TreeNode, right_sibling: TreeNode) -> bool:
+    # 左と右の間にいる兄弟ノードを均等にずらす
+
+    # 戻り値
+    is_moved = False
+
+    # 親ノードを取得
     parent = left_sibling.parent
+
+    # 左右の兄弟ノードのインデックスを取得
     left_index = parent.children.index(left_sibling)
     right_index = parent.children.index(right_sibling)
 
@@ -271,49 +330,47 @@ def center_nodes_between(left_sibling: TreeNode, right_sibling: TreeNode):
 
     # その間に兄弟ノードが存在しない場合は何もしない
     if num_nodes_between <= 0:
-        return
+        return is_moved
+
+    is_moved = True
 
     # 存在する場合は、その間にいる兄弟ノードをずらす
-    # 両端のX位置の差をノード数で割って間隔を求める
+    # 両端のX位置の差をノード数+1で割って間隔を求める
     distance = (right_sibling.x - left_sibling.x) / (num_nodes_between + 1)
 
     count = 1
     for i in range(left_index + 1, right_index):
-        middle_node = parent.children[i]
+        middle_sibling = parent.children[i]
         desired_x = left_sibling.x + distance * count
-        offset = desired_x - middle_node.x
-        middle_node.x += offset
-        middle_node.mod += offset
+        offset = desired_x - middle_sibling.x
+        middle_sibling.x += offset
+        middle_sibling.mod += offset
         count += 1
 
+    return is_moved
 
-def finalize_tree_position(root: TreeNode, mod_sum: int = 0):
+
+def calc_x_preorder(root: TreeNode, mod_sum: float = 0.0):
+    """preorderトラバーサルで探索してノードのX座標を確定します
+    """
     if root == None:
         return
 
+    #
+    # preorder処理
+    #
+
+    # 自分の位置をmod_sumd移動
     root.x += mod_sum
+
+    # 自分のmodを加算して、子を動かす
     mod_sum += root.mod
 
     for child in root.children:
-        finalize_tree_position(child, mod_sum)
+        calc_x_preorder(child, mod_sum)
 
 
-    if len(root.children) == 0:
-        root.width = root.x
-        root.height = root.y
-    else:
-        root.width = root.children[0].width
-        root.height = root.children[0].height
-
-        for child in root.children[1:]:
-            root.width = max(root.width, child.width)
-            root.height = max(root.height, child.height)
-
-        root.width = root.width + 1
-        root.height = root.height + 1
-
-
-def get_left_contour(node: TreeNode, mod_sum: int = 0, left_contour: dict = {}):
+def get_left_contour(node: TreeNode, mod_sum: float = 0.0, left_contour: dict = {}):
     if node == None:
         return
 
@@ -328,7 +385,7 @@ def get_left_contour(node: TreeNode, mod_sum: int = 0, left_contour: dict = {}):
         get_left_contour(child, mod_sum, left_contour)
 
 
-def get_right_contour(node: TreeNode, mod_sum: int = 0, right_contour: dict = {}):
+def get_right_contour(node: TreeNode, mod_sum: float = 0.0, right_contour: dict = {}):
     if node == None:
         return
 
@@ -345,19 +402,17 @@ def get_right_contour(node: TreeNode, mod_sum: int = 0, right_contour: dict = {}
 
 def shift_to_right(node: TreeNode):
     # ノードのX座標がマイナスだと、画面の左にはみ出てしまうので右にずらす
-    node_coutour = {}
-    get_left_contour(node, 0, node_coutour)
+    coutour = {}
+    get_left_contour(node, 0, coutour)
 
     shift_amount = 0
-    for level in node_coutour.keys():
-        if node_coutour[level] + shift_amount < 0:
-            shift_amount = -1 * node_coutour[level]
+    for level in coutour.keys():
+        if coutour[level] + shift_amount < 0:
+            shift_amount = -1 * coutour[level]
 
     if shift_amount > 0:
         node.x += shift_amount
         node.mod += shift_amount
-
-
 
 
 def print_tree(root, indent=0):
@@ -381,6 +436,34 @@ def dump_tree(root, indent=0):
     for child in root.children:
         dump_tree(child, indent + 1)
 
+
+def save_png(root, filename):
+    import matplotlib.pyplot as plt
+    import networkx as nx
+
+    def add_tree(root, G):
+        if root is None:
+            return
+        G.add_node(root.node_name)
+        for child in root.children:
+            G.add_edge(root.node_name, child.node_name)
+            add_tree(child, G)
+
+    def get_postion_preorder(root, position={}):
+        if root is None:
+            return
+        position[root.node_name] = (root.x, -root.y)
+        for child in root.children:
+            get_postion_preorder(child, position)
+
+    position = {}
+    get_postion_preorder(root, position)
+
+    G = nx.Graph()
+    add_tree(root, G)
+    nx.draw(G, pos=position)
+    plt.savefig(filename)
+    plt.cla()
 
 if __name__ == '__main__':
 
@@ -495,16 +578,20 @@ if __name__ == '__main__':
         ]
         return trees
 
+    def test_tree(tree, filename):
+        calc_y_preorder(tree)
+        calc_x_postorder(tree)
+        shift_to_right(tree)
+        calc_x_preorder(tree)
+        dump_tree(tree)
+        save_png(tree, filename)
+
+
     def main():
         trees = create_test_TreeNode()
 
-        for tree in trees:
-            initialize_tree_preorder(tree)
-            calc_x_postorder(tree)
-            shift_to_right(tree)
-            finalize_tree_position(tree)
-            dump_tree(tree)
-            print()
+        for i, tree in enumerate(trees):
+            test_tree(tree, f"log/tree_{i}.png")
 
         return 0
 
