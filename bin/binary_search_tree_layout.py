@@ -24,6 +24,9 @@ class BinaryTreeNode:
         # 実際のX軸の位置
         self.x: int = 0
 
+        # 実際のY軸の位置
+        self.y: int = 0
+
         # 深さ = Y軸の位置
         self.depth : int = 0
 
@@ -224,14 +227,14 @@ def reingold_tilford_preorder(node):
         node.left.x = node.left.relative_x + node.x
 
         # 子の深さは自分の深さ+1
-        node.left.depth = node.depth + 1
+        node.left.depth = node.left.y = node.depth + 1
 
     if node.right != None:
         # 右の子の位置を決める
         node.right.x = node.right.relative_x + node.x
 
         # 子の深さは自分の深さ+1
-        node.right.depth = node.depth + 1
+        node.right.depth = node.right.y = node.depth + 1
 
     # 再帰呼び出しで深く降りていく
     reingold_tilford_preorder(node.left)
@@ -242,6 +245,42 @@ def reingold_tilford(node):
     reingold_tilford_postorder(node)
     reingold_tilford_preorder(node)
 
+
+def save_png(root, filename):
+    import matplotlib.pyplot as plt
+    import networkx as nx
+
+    def add_tree(root, G):
+        if root is None:
+            return
+
+        G.add_node(root.data)
+
+        if root.left is not None:
+            G.add_edge(root.data, root.left.data)
+            add_tree(root.left, G)
+
+        if root.right is not None:
+            G.add_edge(root.data, root.right.data)
+            add_tree(root.right, G)
+
+
+    def get_postion_preorder(root, position={}):
+        if root is None:
+            return
+
+        position[root.data] = (root.x, -root.y)
+        get_postion_preorder(root.left, position)
+        get_postion_preorder(root.right, position)
+
+    position = {}
+    get_postion_preorder(root, position)
+
+    G = nx.Graph()
+    add_tree(root, G)
+    nx.draw(G, pos=position, node_size=100)
+    plt.savefig(filename)
+    plt.cla()
 
 
 if __name__ == '__main__':
@@ -275,6 +314,8 @@ if __name__ == '__main__':
 
         for node in preorder(root):
             print(node.data, node.relative_x, (node.x, node.depth), node.left_contour, node.right_contour)
+
+        save_png(root, "log/binary_search_tree_layout.png")
 
         # reingold_tilford(root)
 

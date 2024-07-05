@@ -5,6 +5,7 @@
 
 import sys
 
+MINIMAL_DISTANCE :float = 2.0
 
 class TreeNode:
 
@@ -144,10 +145,10 @@ def postorder(root: TreeNode):
 
 
 def calc_y_preorder(root: TreeNode, depth: int = 0):
-    """preorderトラバーサルでノードの深さを求めてY座標を各ノードに設定します
+    """preorderトラバーサルで探索し、ノードに自身の深さを設定する
 
-    X座標を決める最後のpreorderトラバーサルで処理することもできるが、
-    分かりやすさのために別関数にしている
+    サブツリーが重ならないように調整する際に、ノードの深さの情報が必要になるので、
+    最初にこれを実行して深さを設定する
 
     Args:
         root (TreeNode): _description_
@@ -172,16 +173,20 @@ def calc_y_preorder(root: TreeNode, depth: int = 0):
 
 
 def calc_x_postorder(node: TreeNode):
-    """postorderトラバーサルで探索してノードのサブツリーが重ならないようにX座標を設定します
+    """postorderトラバーサルで探索してノードのサブツリーが重ならないようにX座標を設定する
 
-    基本的な考え方はreingold-tilfordアルゴリズムに基づいています。
-    ツリーの最下部から上に遡りながらX座標を設定していくので、
-    子ノードの位置はすでに設定されている前提で処理します。
-    兄弟ノードにおいては、一番左のノードを基準に一定間隔で並べていきます。
-    自分よりも左にいる兄弟ノードとの重なりを解消する処理を行いますが、
-    自分が右に動いたとき、自分の配下のサブツリーも同じ距離移動させる必要がありますが、
-    その都度、サブツリーを探索するのは効率が悪いので、
-    自分自身のmod変数に移動すべき量を記録しておいて、最後にまとめてサブツリーを移動させます。
+    基本的な考え方はreingold-tilfordアルゴリズムに基づいている。
+    ツリーの最下部から上に遡りながらX座標を設定していくため、
+    子ノードの位置はすでに設定されている前提で処理を進めていく。
+
+    自分が兄弟のどこにいるかによって処理を変える。
+    一番左であれば自分が基準なのでX座標は子の位置に合わせればよい。
+    そうでなければ、子ノードの中央に配置する。
+
+    自分のX座標を決めたあと、兄弟ノードのサブツリー同士で位置を確認し、重なっていれば右に移動していく。
+    自分が動くとき、自分の配下のサブツリーも石化して同じ距離を移動させる必要があるが、
+    その都度サブツリーを探索して位置を修正していくのは効率が悪いので、
+    自分自身のmod変数に移動すべき量を記録しておいて、最後にまとめてサブツリーを移動させる。
 
     Args:
         node (TreeNode): _description_
@@ -196,6 +201,8 @@ def calc_x_postorder(node: TreeNode):
     # postorder処理
     #
 
+    minimal_distance = MINIMAL_DISTANCE
+
     #
     # 子がいない場合
     #
@@ -204,150 +211,264 @@ def calc_x_postorder(node: TreeNode):
             # 自分が兄弟ノードの一番左ならX軸方向の位置は0に初期化
             node.x = 0
         else:
-            # 左の兄弟のX座標+1に初期化
-            node.x = node.get_previous_sibling().x + 1
+            # 左の兄弟のX座標に最小間隔を加えて初期化
+            node.x = node.get_previous_sibling().x + minimal_distance
 
-        # サブツリーが存在しないので処理終了
+        # サブツリーが存在しないので、ここで処理終了
         return
 
     #
-    # 子が一つの場合
+    # 自分の子が一つの場合
     #
     if len(node.children) == 1:
 
         if node.is_left_most():
             # 自分が兄弟ノードの一番左なら、自分が兄弟たちの基準位置になる
-            # X軸方向の位置は子に合わせればよい
+            # 自分のX軸方向の位置は子に合わせればよい
             # 子の位置は変わらないのでmodは設定しなくてよい
             node.x = node.children[0].x
         else:
-            # 左隣のX座標に+1
-            node.x = node.get_previous_sibling().x + 1
+            # 左隣のX座標に最小間隔を加える
+            node.x = node.get_previous_sibling().x + minimal_distance
 
-            # 子は一つなので自分と子のX座標を一致させたい
             # 自分が右に移動してしまったので、子も移動させるが、
             # 子の配下のサブツリー全体を移動させるのは大変なのでmodに移動すべき量を記録しておいて最後に移動する
             node.mod = node.x - node.children[0].x
 
     #
-    # 子が複数ある場合
+    # 自分の子が複数の場合
     #
     else:
 
-        left_most_child = node.get_left_most_child()
-        right_most_child = node.get_right_most_child()
-        center_x = (left_most_child.x + right_most_child.x) / 2
+        # 子の中心位置を求める
+        center_x :float = (node.get_left_most_child().x + node.get_right_most_child().x) / 2
 
         if node.is_left_most():
             # 自分自身が兄弟ノードの一番左なら、自分は兄弟における基準位置になる
-            # 自分の位置は子の中央に初期化する
+            # 自分の位置を子の中央に初期化する
+            # 子の位置は変わらないのでmodは設定しなくてよい
             node.x = center_x
         else:
-            # 一番左でないなら、左隣のX座標に+1する
-            node.x = node.get_previous_sibling().x + 1
+            # 一番左でないなら、自分は左隣のX座標に最小間隔を加える
+            node.x = node.get_previous_sibling().x + minimal_distance
 
             # 自分配下のサブツリーを動かす量をmodに記録しておく
-            # 子の中央が自分になってほしいので、自分に対して子の中央がどれだけずれているかを記録する
+            # 子の中央が自分のX座標になるように子の移動量を決める
             node.mod = node.x - center_x
 
-    # この時点では、親子の位置関係は正しく設定されているものの、
-    # サブツリー同士の重なりは解決できていない
-    # 自分が一番左のサブツリーであれば、それが基準なのでそのままでよいが、
-    # そうでなければ、必要なだけ右にずらす
-    if len(node.children) > 0 and node.is_left_most() == False:
-        fix_conflicts(node)
+    # この時点で、親子の位置関係および兄弟との位置関係は設定されたが、
+    # サブツリー同士が重なっているか、は確認していない
+
+    # 自分が一番左のサブツリーであれば、それが基準位置なので、重なりを確認する必要はない
+    if node.is_left_most():
+        return
+
+    # 自分が一番左でなければ、必要なだけ右にずらして重なりを解消する
+    resolve_overlap(node)
+
+    # 重なりは解消したものの、兄弟の間隔が均等ではなくなっているので、これを修正する
+    # equalize_position()の戻り値がFalseになるまで繰り返し実行してもいいが、
+    # さほど見栄えは良くならないので、ここでは無視する
+    equalize_position(node)
 
 
-def fix_conflicts(node: TreeNode):
+def get_left_contour(node: TreeNode, mod_sum: float = 0.0, left_contour: dict = {}):
+    """preorderトラバーサルで探索し、ノードの左輪郭を取得する
 
-    # サブツリー間にどれだけの最小距離を保つか
-    min_distance = 1
+    Args:
+        node (TreeNode): _description_
+        mod_sum (float, optional): _description_. Defaults to 0.0.
+        left_contour (dict, optional): _description_. Defaults to {}.
+    """
+    if node == None:
+        return
 
-    # このノードの左輪郭を求める
-    # 各階層における最小のX座標を記録したいので{ depth: x } の形で保持する
-    node_left_contour = {}
-    get_left_contour(node, 0, node_left_contour)
+    #
+    # preorder探索の処理
+    #
 
-    # 自分よりも左にいる兄弟ノードとの重なり合いを順番に調べていく
-    # 自分よりも右側にいる兄弟は、あとで処理するので考慮しない
-    shift_value = 0
+    if left_contour.get(node.depth) is None:
+        left_contour[node.depth] = node.x + mod_sum
+    else:
+        left_contour[node.depth] = min(left_contour[node.depth], node.x + mod_sum)
+
+    mod_sum += node.mod
+
+    for child in node.children:
+        get_left_contour(child, mod_sum, left_contour)
+
+
+def get_right_contour(node: TreeNode, mod_sum: float = 0.0, right_contour: dict = {}):
+    """preorderトラバーサルで探索し、ノードの右輪郭を取得する
+
+    Args:
+        node (TreeNode): _description_
+        mod_sum (float, optional): _description_. Defaults to 0.0.
+        right_contour (dict, optional): _description_. Defaults to {}.
+    """
+    if node == None:
+        return
+
+    #
+    # preorder探索の処理
+    #
+
+    if right_contour.get(node.depth) is None:
+        right_contour[node.depth] = node.x + mod_sum
+    else:
+        right_contour[node.depth] = max(right_contour[node.depth], node.x + mod_sum)
+
+    mod_sum += node.mod
+
+    for child in node.children:
+        get_right_contour(child, mod_sum, right_contour)
+
+
+def get_distance_between(left_node: TreeNode, right_node: TreeNode) -> float:
+    """左ノードの右輪郭と、右ノードの左輪郭を比較して、最も狭い間隔を返す
+
+    条件
+        - left_nodeとright_nodeは同じ親を持つ兄弟とする
+        - 各ノードにはdepth値が設定されているものとする
+
+    ツリーの間隔が
+        - マイナスなら、重なっている
+        - ゼロなら左ノードの右端と、右ノードの左端が重なっている
+        - プラスなら離れている
+    ということを表している
+
+    Args:
+        left_node (TreeNode): left sibling
+        right_node (TreeNode): right sibling
+
+    Returns:
+        float: distance between left and right sibling
+    """
+
+    # 左ノードの右輪郭を取得
+    left_node_right_contour = {}
+    get_right_contour(left_node, mod_sum=0, right_contour=left_node_right_contour)
+
+    # 右ノードの左輪郭を取得
+    right_node_left_contour = {}
+    get_left_contour(right_node, mod_sum=0, left_contour=right_node_left_contour)
+
+    # 輪郭の辞書のキーは階層を表しているので、その数字の最大値が輪郭の深さになる
+    # 輪郭の深さの短い方を取得する
+    min_depth = min(max(left_node_right_contour.keys()), max(right_node_left_contour.keys()))
+
+    # 左右のツリー間がどのくらい離れているか、最小値を求める
+    min_distance :float = sys.float_info.max
+    for depth in range(right_node.depth + 1, min_depth + 1):
+        distance = right_node_left_contour[depth] - left_node_right_contour[depth]
+        if distance < min_distance:
+            min_distance = distance
+
+    return float(min_distance)
+
+
+def resolve_overlap(node: TreeNode):
+    """自分よりも左にいる兄弟ノードと位置を比較し、サブツリーが重なるようであれば、自分自身を右に移動させる
+
+    Args:
+        node (TreeNode): _description_
+    """
+    # サブツリー間の最小間隔として確保したい量
+    minimal_distance = MINIMAL_DISTANCE
+
+    # 兄弟の左端から始めて、自分の左隣りまで、に関して、
     sibling = node.get_left_most_sibling()
-
-    # 左端から、自分の左隣りまでの兄弟に関して、
     while sibling != None and sibling != node:
+        # もしサブツリーが重なっていたら、自分が右に動く量
+        shift_value = 0
 
-        # その兄弟の右輪郭を調べる
-        sibling_right_contour = {}
-        get_right_contour(sibling, 0, sibling_right_contour)
-
-        # 全ての深さで重なりをチェックしてもいいが、片方が存在しない深さはチェックしても無駄になる
-        # 深さの短い方を取って、その深さまでをチェックする
-        # 辞書型で作成したcontourはキーが深さなので、キーの最大値を取れば深さの最大値がわかる
-        min_depth = min(max(node_left_contour.keys()), max(sibling_right_contour.keys()))
-        for depth in range(node.depth + 1, min_depth + 1):
-            distance = node_left_contour[depth] - sibling_right_contour[depth]
-            if distance + shift_value < min_distance:
-                shift_value = min_distance - distance
+        # 兄弟ノードとの距離を計測
+        distance = get_distance_between(sibling, node)
+        if distance + shift_value < minimal_distance:
+            shift_value = minimal_distance - distance
 
         if shift_value > 0:
             # 自分の位置を右にずらす
             node.x += shift_value
 
-            # サブツリーはあとでまとめて修正するのでmodにずらした量を加算しておく
+            # 自分配下のサブツリーはあとでまとめて修正するのでmodにずらした量を加算しておく
             node.mod += shift_value
-
-            # ずらし終わったので移動量をリセット
-            shift_value = 0
-
-            # 自分が右に移動したので、その間にいる兄弟達の位置を均等化する
-            is_moved = center_nodes_between(sibling, node)
-
-            if is_moved:
-                # 間にいる兄弟が自分に寄ってきたことで重なりが発生するかもしれないので
-                # 繰り返し確認して、自分よりも左側に重複がないことを担保する
-                fix_conflicts(node)
 
         # 次の兄弟ノードとの間に重なりがあるかどうかを調べる
         sibling = sibling.get_next_sibling()
 
 
+def equalize_position(node: TreeNode) -> bool:
+    """自分よりも左にいる兄弟ノードの位置をできるだけ均等化します
 
-def center_nodes_between(left_sibling: TreeNode, right_sibling: TreeNode) -> bool:
-    # 左と右の間にいる兄弟ノードを均等にずらす
+    兄弟ノードの位置は、重なりがない最小の間隔で並べたので、左に寄せられたバランスが悪い状態になっている。
 
-    # 戻り値
-    is_moved = False
+    o---o---------------o
+    left_most          node
 
-    # 親ノードを取得
-    parent = left_sibling.parent
+    このように、できるだけ均等に配置し直す。
 
-    # 左右の兄弟ノードのインデックスを取得
-    left_index = parent.children.index(left_sibling)
-    right_index = parent.children.index(right_sibling)
+    o---------o---------o
+    left_most          node
 
-    # その間に何個の兄弟ノードがあるか
-    num_nodes_between = right_index - left_index - 1
+    Args:
+        node (TreeNode): _description_
 
-    # その間に兄弟ノードが存在しない場合は何もしない
+    Returns:
+        _type_: _description_
+    """
+
+    # 元々の自分の位置を記録して、変化があったかを確認する
+    node_x = node.x
+
+    # 自分は兄弟における何番目か
+    node_index = node.parent.children.index(node)
+
+    # 自分と左端ノードの間には、何個の兄弟ノードがあるか
+    num_nodes_between = node_index - 1
+
+    # 間に兄弟ノードがないなら、位置を調整する対象がないので何もしない
     if num_nodes_between <= 0:
-        return is_moved
+        return
 
-    is_moved = True
+    # 一番左の兄弟と、自分との間の距離を求める
+    width = node.x - node.get_left_most_sibling().x
 
-    # 存在する場合は、その間にいる兄弟ノードをずらす
-    # 両端のX位置の差をノード数+1で割って間隔を求める
-    distance = (right_sibling.x - left_sibling.x) / (num_nodes_between + 1)
+    # 間にいる兄弟の数を考慮して望まれる間隔を求める
+    interval = width / (num_nodes_between + 1)
 
-    count = 1
-    for i in range(left_index + 1, right_index):
-        middle_sibling = parent.children[i]
-        desired_x = left_sibling.x + distance * count
-        offset = desired_x - middle_sibling.x
-        middle_sibling.x += offset
-        middle_sibling.mod += offset
-        count += 1
+    # 最小でも確保したい間隔
+    minimal_distance = MINIMAL_DISTANCE
 
-    return is_moved
+    # 左端の一つ右のノードから始めて、自分まで
+    for i in range(1, node_index + 1):
+        mid_node = node.parent.children[i]
+        prev_node = node.parent.children[i-1]
+
+        # 前のループで左隣のノードが間隔を広げて寄ってきているため、再びサブツリー同士の重複が発生しているかもしれない
+        if i == 1:
+            # 初回ループは関係なく
+            pass
+        elif len(mid_node.children) == 0:
+            # また、子がいなければツリーの重複は起こり得ない
+            pass
+        else:
+            # 左隣との距離を計測して重なっていれば右に移動する
+            distance = get_distance_between(prev_node, mid_node)
+            if distance < minimal_distance:
+                shift_value = minimal_distance - distance
+                mid_node.x += shift_value
+                mid_node.mod += shift_value
+
+        # 左隣りとの間隔が狭ければ、広げる
+        if mid_node.x - prev_node.x < interval:
+            shift_value = interval - mid_node.x + prev_node.x
+            mid_node.x += shift_value
+            mid_node.mod += shift_value
+
+    # 元の位置から変わっていたらTrueを返す
+    if node.x - node_x > 0:
+        return True
 
 
 def calc_x_preorder(root: TreeNode, mod_sum: float = 0.0):
@@ -368,51 +489,6 @@ def calc_x_preorder(root: TreeNode, mod_sum: float = 0.0):
 
     for child in root.children:
         calc_x_preorder(child, mod_sum)
-
-
-def get_left_contour(node: TreeNode, mod_sum: float = 0.0, left_contour: dict = {}):
-    if node == None:
-        return
-
-    if left_contour.get(node.depth) is None:
-        left_contour[node.depth] = node.x + mod_sum
-    else:
-        left_contour[node.depth] = min(left_contour[node.depth], node.x + mod_sum)
-
-    mod_sum += node.mod
-
-    for child in node.children:
-        get_left_contour(child, mod_sum, left_contour)
-
-
-def get_right_contour(node: TreeNode, mod_sum: float = 0.0, right_contour: dict = {}):
-    if node == None:
-        return
-
-    if right_contour.get(node.depth) is None:
-        right_contour[node.depth] = node.x + mod_sum
-    else:
-        right_contour[node.depth] = max(right_contour[node.depth], node.x + mod_sum)
-
-    mod_sum += node.mod
-
-    for child in reversed(node.children):
-        get_right_contour(child, mod_sum, right_contour)
-
-
-def shift_to_right(node: TreeNode):
-    # ノードのX座標がマイナスだと、画面の左にはみ出てしまうので右にずらす
-    coutour = {}
-    get_left_contour(node, 0, coutour)
-
-    shift_amount = 0
-    for level in coutour.keys():
-        if coutour[level] + shift_amount < 0:
-            shift_amount = -1 * coutour[level]
-
-    if shift_amount > 0:
-        node.x += shift_amount
-        node.mod += shift_amount
 
 
 def print_tree(root, indent=0):
@@ -461,127 +537,147 @@ def save_png(root, filename):
 
     G = nx.Graph()
     add_tree(root, G)
-    nx.draw(G, pos=position)
+    nx.draw(G, pos=position, node_size=100)
     plt.savefig(filename)
     plt.cla()
+
 
 if __name__ == '__main__':
 
     def create_test_TreeNode():
 
         trees = [
-            # 0 simple test
+            # 0
             TreeNode("root",
-                     TreeNode("l"),
-                     TreeNode("r")),
+                     TreeNode("L1"),
+                     TreeNode("R1")),
 
-            # 1 deep left
+            # 1
             TreeNode("root",
-                     TreeNode("l1",
-                              TreeNode("l2",
-                                       TreeNode("l3",
-                                                TreeNode("l4")))),
-                     TreeNode("r1")),
+                     TreeNode("L1"),
+                     TreeNode("M1"),
+                     TreeNode("R1")),
 
-            # 2 deep right
+            # 2
             TreeNode("root",
-                     TreeNode("l1"),
-                     TreeNode("r1",
-                              TreeNode("r2",
-                                       TreeNode("r3",
-                                                TreeNode("r4"))))
+                     TreeNode("L1",
+                              TreeNode("L1L2"),
+                              TreeNode("L1R2")),
+                     TreeNode("R1",
+                              TreeNode("R1L2"),
+                              TreeNode("R1R2"))),
+
+            # 3
+            TreeNode("root",
+                     TreeNode("L1",
+                              TreeNode("L1L2",
+                                       TreeNode("L1L2L3",
+                                                TreeNode("L1L2L3L4")))),
+                     TreeNode("R1")),
+
+            # 4
+            TreeNode("root",
+                     TreeNode("L1"),
+                     TreeNode("R1",
+                              TreeNode("R1R2",
+                                       TreeNode("R1R2R3",
+                                                TreeNode("R1R2R3R4"))))
                      ),
 
-            # 3 tight right
+            # 5
             TreeNode("root",
-                     TreeNode("l1",
-                              TreeNode("l2",
-                                       TreeNode("l3"), TreeNode("l4"))),
-                     TreeNode("r1",
-                              TreeNode("rl1"),
-                              TreeNode("rr1",
-                                       TreeNode("rr2"), TreeNode("rr3")))),
+                     TreeNode("L1",
+                              TreeNode("L1L2",
+                                       TreeNode("L1L2L3"), TreeNode("L1L2L3L4"))),
+                     TreeNode("R1",
+                              TreeNode("RL1"),
+                              TreeNode("RR1",
+                                       TreeNode("RR2"), TreeNode("RR3")))),
 
-            # 4 unbalanced
+            # 6
             TreeNode("root",
-                     TreeNode("l1",
-                              TreeNode("l2",
-                                       TreeNode("l3",
-                                                TreeNode("l4",
-                                                         TreeNode("l5"),
-                                                         TreeNode("l6")),
-                                                TreeNode("l7")),
-                                       TreeNode("l8")),
-                              TreeNode("l9")),
-                     TreeNode("r1",
-                              TreeNode("r2",
-                                       TreeNode("r3"),
-                                       TreeNode("r4")),
-                              TreeNode("r5"))),
+                     TreeNode("L1",
+                              TreeNode("L2",
+                                       TreeNode("L3",
+                                                TreeNode("L4",
+                                                         TreeNode("L5"),
+                                                         TreeNode("L6")),
+                                                TreeNode("L7")),
+                                       TreeNode("L8")),
+                              TreeNode("L9")),
+                     TreeNode("R1",
+                              TreeNode("R2",
+                                       TreeNode("R3"),
+                                       TreeNode("R4")),
+                              TreeNode("R5"))),
 
-            # 5 Wetherell-Shannon Tree
+            # 7
             TreeNode("root",
-                     TreeNode("l1",
-                              TreeNode("ll1"),
-                              TreeNode("lr1",
-                                       TreeNode("lrl"),
-                                       TreeNode("lrr"))),
-                     TreeNode("r1",
-                              TreeNode("rr2",
-                                       TreeNode("rr3",
-                                                TreeNode("rrl",
-                                                         TreeNode("rrll",
+                     TreeNode("L1",
+                              TreeNode("LL1"),
+                              TreeNode("LR1",
+                                       TreeNode("LRL"),
+                                       TreeNode("LRR"))),
+                     TreeNode("R1",
+                              TreeNode("RR2",
+                                       TreeNode("RR3",
+                                                TreeNode("RRL",
+                                                         TreeNode("RRLL",
                                                                   TreeNode(
-                                                                      "rrlll"),
-                                                                  TreeNode("rrllr")),
-                                                         TreeNode("rrlr")))))),
+                                                                      "RRLLL"),
+                                                                  TreeNode("RRLLR")),
+                                                         TreeNode("RRLR")))))),
 
-            # 6 Buchheim Failure
+            # 8
             TreeNode("root",
-                     TreeNode("l",
-                              TreeNode("ll"),
-                              TreeNode("lr")),
-                     TreeNode("r",
-                              TreeNode("rl"),
-                              TreeNode("rr"))),
+                     TreeNode("BigLeft",
+                              TreeNode("L1"),
+                              TreeNode("L2"),
+                              TreeNode("L3"),
+                              TreeNode("L4"),
+                              TreeNode("L5"),
+                              TreeNode("L6"),
+                              TreeNode("L7", TreeNode("LL1"))),
+                     TreeNode("M1"),
+                     TreeNode("M2"),
+                     TreeNode("M3", TreeNode("M31")),
+                     TreeNode("M4",
+                              TreeNode("M4L"), TreeNode("M4C"), TreeNode("M4R",
+                                                                         TreeNode("M4RC"))),
+                     TreeNode("BigRight",
+                              TreeNode("BRR",
+                                       TreeNode("BR1"),
+                                       TreeNode("BR2"),
+                                       TreeNode("BR3"),
+                                       TreeNode("BR4"),
+                                       TreeNode("BR5"),
+                                       TreeNode("BR6"),
+                                       TreeNode("BR7")))),
 
-            # 7 simple n-ary
+            # 9
             TreeNode("root",
-                     TreeNode("l"),
-                     TreeNode("m"),
-                     TreeNode("r")),
-
-            # 8 buchheim n-ary tree
-            # this works perfectly.
-            TreeNode("root",
-                     TreeNode("bigleft",
-                              TreeNode("l1"),
-                              TreeNode("l2"),
-                              TreeNode("l3"),
-                              TreeNode("l4"),
-                              TreeNode("l5"),
-                              TreeNode("l6"),
-                              TreeNode("l7", TreeNode("ll1"))),
-                     TreeNode("m1"),
-                     TreeNode("m2"),
-                     TreeNode("m3", TreeNode("m31")),
-                     TreeNode("m4"),
-                     TreeNode("bigright",
-                              TreeNode("brr",
-                                       TreeNode("br1"),
-                                       TreeNode("br2"),
-                                       TreeNode("br3"),
-                                       TreeNode("br4"),
-                                       TreeNode("br5"),
-                                       TreeNode("br6"),
-                                       TreeNode("br7")))),
+                     TreeNode("E",
+                              TreeNode("A"),
+                              TreeNode("D",
+                                       TreeNode("B"),
+                                       TreeNode("C"))),
+                     TreeNode("F"),
+                     TreeNode("N",
+                              TreeNode("G"),
+                              TreeNode("M",
+                                       TreeNode("H"),
+                                       TreeNode("I"),
+                                       TreeNode("J"),
+                                       TreeNode("K"),
+                                       TreeNode("L"))),
+                     )
         ]
         return trees
+
 
     def test_tree(tree, filename):
         calc_y_preorder(tree)
         calc_x_postorder(tree)
-        shift_to_right(tree)
         calc_x_preorder(tree)
         dump_tree(tree)
         save_png(tree, filename)
