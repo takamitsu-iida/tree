@@ -5,7 +5,8 @@
 
 import sys
 
-MINIMAL_DISTANCE :float = 2.0
+MINIMAL_X_DISTANCE :float = 1.0
+MINIMAL_Y_DISTANCE :float = 1.0
 
 class TreeNode:
 
@@ -34,6 +35,7 @@ class TreeNode:
 
         # このノード配下のサブツリー全体を左右に移動させるための変数
         # ツリーの探索回数を減らすために、この変数を使ってノードの位置を調整し、最後にまとめて位置を修正する
+        # modという名前は参考文献に倣っている
         self.mod: float = 0.0
 
     #
@@ -164,9 +166,9 @@ def calc_y_preorder(root: TreeNode, depth: int = 0):
     # 深さをノードに設定
     root.depth = depth
 
-    # Y座標は深さと同じものを設定
-    # 見栄えを調整するときに変更すればよい
-    root.y = depth
+    # Y座標は深さにMINIMAL_Y_DISTANCEをかけたものを設定
+    # 別途、見栄えを調整するときに変更すればよい
+    root.y = depth * MINIMAL_Y_DISTANCE
 
     for child in root.children:
         calc_y_preorder(child, depth + 1)
@@ -177,13 +179,11 @@ def calc_x_postorder(node: TreeNode):
 
     基本的な考え方はreingold-tilfordアルゴリズムに基づいている。
     ツリーの最下部から上に遡りながらX座標を設定していくため、
-    子ノードの位置はすでに設定されている前提で処理を進めていく。
-
-    自分が兄弟のどこにいるかによって処理を変える。
-    一番左であれば自分が基準なのでX座標は子の位置に合わせればよい。
+    自分の子ノードの位置はすでに設定されている前提で処理を進めていく。
+    自分のX座標の初期値は自分が兄弟のどこにいるかによって変わる。
+    兄弟の一番左であれば自分が基準なのでX座標は0に設定する。
     そうでなければ、子ノードの中央に配置する。
-
-    自分のX座標を決めたあと、兄弟ノードのサブツリー同士で位置を確認し、重なっていれば右に移動していく。
+    こうして自分のX座標を決めたあと、自分よりも左側にいる兄弟ノードのサブツリー同士で位置を確認し、重なっていれば自分を右に動かす。
     自分が動くとき、自分の配下のサブツリーも石化して同じ距離を移動させる必要があるが、
     その都度サブツリーを探索して位置を修正していくのは効率が悪いので、
     自分自身のmod変数に移動すべき量を記録しておいて、最後にまとめてサブツリーを移動させる。
@@ -201,7 +201,7 @@ def calc_x_postorder(node: TreeNode):
     # postorder処理
     #
 
-    minimal_distance = MINIMAL_DISTANCE
+    minimal_distance = MINIMAL_X_DISTANCE
 
     #
     # 子がいない場合
@@ -263,17 +263,24 @@ def calc_x_postorder(node: TreeNode):
     if node.is_left_most():
         return
 
-    # 自分が一番左でなければ、必要なだけ右にずらして重なりを解消する
+    # 自分が一番左でなければ、必要なだけ自分を右にずらして重なりを解消する
     resolve_overlap(node)
 
     # 重なりは解消したものの、兄弟の間隔が均等ではなくなっているので、これを修正する
-    # equalize_position()の戻り値がFalseになるまで繰り返し実行してもいいが、
-    # さほど見栄えは良くならないので、ここでは無視する
-    equalize_position(node)
+    if node.is_right_most():
+        # equalize_position()の戻り値がFalseになるまで繰り返し実行してもいいが、
+        # さほど見栄えは良くならないので、ここでは１回だけ実行する
+        equalize_position(node)
 
 
 def get_left_contour(node: TreeNode, mod_sum: float = 0.0, left_contour: dict = {}):
     """preorderトラバーサルで探索し、ノードの左輪郭を取得する
+
+    ノードにはdepthキーで深さが設定されているものとする。
+
+    メモ:
+        輪郭を形成するノードへのポインタを保持しておいた方がよいのかもしれないが、
+        ここでは最も左にいるノードの位置を辞書型にして返却している
 
     Args:
         node (TreeNode): _description_
@@ -324,7 +331,7 @@ def get_right_contour(node: TreeNode, mod_sum: float = 0.0, right_contour: dict 
         get_right_contour(child, mod_sum, right_contour)
 
 
-def get_distance_between(left_node: TreeNode, right_node: TreeNode) -> float:
+def get_minimum_distance_between(left_node: TreeNode, right_node: TreeNode) -> float:
     """左ノードの右輪郭と、右ノードの左輪郭を比較して、最も狭い間隔を返す
 
     条件
@@ -357,7 +364,7 @@ def get_distance_between(left_node: TreeNode, right_node: TreeNode) -> float:
     # 輪郭の深さの短い方を取得する
     min_depth = min(max(left_node_right_contour.keys()), max(right_node_left_contour.keys()))
 
-    # 左右のツリー間がどのくらい離れているか、最小値を求める
+    # 左右のツリー間が各階層でどのくらい離れているかを調べ、その最小値を求める
     min_distance :float = sys.float_info.max
     for depth in range(right_node.depth + 1, min_depth + 1):
         distance = right_node_left_contour[depth] - left_node_right_contour[depth]
@@ -374,16 +381,16 @@ def resolve_overlap(node: TreeNode):
         node (TreeNode): _description_
     """
     # サブツリー間の最小間隔として確保したい量
-    minimal_distance = MINIMAL_DISTANCE
+    minimal_distance = MINIMAL_X_DISTANCE
 
     # 兄弟の左端から始めて、自分の左隣りまで、に関して、
     sibling = node.get_left_most_sibling()
     while sibling != None and sibling != node:
-        # もしサブツリーが重なっていたら、自分が右に動く量
+        # もしサブツリーが重なっていたら、自分が右に動くべき量
         shift_value = 0
 
         # 兄弟ノードとの距離を計測
-        distance = get_distance_between(sibling, node)
+        distance = get_minimum_distance_between(sibling, node)
         if distance + shift_value < minimal_distance:
             shift_value = minimal_distance - distance
 
@@ -399,7 +406,7 @@ def resolve_overlap(node: TreeNode):
 
 
 def equalize_position(node: TreeNode) -> bool:
-    """自分よりも左にいる兄弟ノードの位置をできるだけ均等化します
+    """自分よりも左にいる兄弟ノードの位置をできるだけ均等化する
 
     兄弟ノードの位置は、重なりがない最小の間隔で並べたので、左に寄せられたバランスが悪い状態になっている。
 
@@ -434,11 +441,11 @@ def equalize_position(node: TreeNode) -> bool:
     # 一番左の兄弟と、自分との間の距離を求める
     width = node.x - node.get_left_most_sibling().x
 
-    # 間にいる兄弟の数を考慮して望まれる間隔を求める
+    # 間にいる兄弟の数を考慮して望ましい間隔を求める
     interval = width / (num_nodes_between + 1)
 
     # 最小でも確保したい間隔
-    minimal_distance = MINIMAL_DISTANCE
+    minimal_distance = MINIMAL_X_DISTANCE
 
     # 左端の一つ右のノードから始めて、自分まで
     for i in range(1, node_index + 1):
@@ -454,7 +461,7 @@ def equalize_position(node: TreeNode) -> bool:
             pass
         else:
             # 左隣との距離を計測して重なっていれば右に移動する
-            distance = get_distance_between(prev_node, mid_node)
+            distance = get_minimum_distance_between(prev_node, mid_node)
             if distance < minimal_distance:
                 shift_value = minimal_distance - distance
                 mid_node.x += shift_value
