@@ -5,8 +5,9 @@
 
 import sys
 
-MINIMAL_X_DISTANCE :float = 1.0
-MINIMAL_Y_DISTANCE :float = 1.0
+MINIMAL_X_DISTANCE: float = 1.0
+MINIMAL_Y_DISTANCE: float = 1.0
+
 
 class TreeNode:
 
@@ -241,7 +242,8 @@ def calc_x_postorder(node: TreeNode):
     else:
 
         # 子の中心位置を求める
-        center_x :float = (node.get_left_most_child().x + node.get_right_most_child().x) / 2
+        center_x: float = (node.get_left_most_child().x +
+                           node.get_right_most_child().x) / 2
 
         if node.is_left_most():
             # 自分自身が兄弟ノードの一番左なら、自分は兄弟における基準位置になる
@@ -266,7 +268,9 @@ def calc_x_postorder(node: TreeNode):
     # 自分が一番左でなければ、必要なだけ自分を右にずらして重なりを解消する
     resolve_overlap(node)
 
-    # 重なりは解消したものの、兄弟の間隔が均等ではなくなっているので、これを修正する
+    # 一番右の兄弟まで処理したら、最後に兄弟間の位置を均等化する
+    # サブツリーは重ならない最小の距離を保っているものの、その間隔は均等ではない
+    # 特に子を持たないノードはMINIMAL_X_DISTANCEで間隔が固定されているので、全体的に左に寄りがちになっている
     if node.is_right_most():
         # equalize_position()の戻り値がFalseになるまで繰り返し実行してもいいが、
         # さほど見栄えは良くならないので、ここでは１回だけ実行する
@@ -297,7 +301,8 @@ def get_left_contour(node: TreeNode, mod_sum: float = 0.0, left_contour: dict = 
     if left_contour.get(node.depth) is None:
         left_contour[node.depth] = node.x + mod_sum
     else:
-        left_contour[node.depth] = min(left_contour[node.depth], node.x + mod_sum)
+        left_contour[node.depth] = min(
+            left_contour[node.depth], node.x + mod_sum)
 
     mod_sum += node.mod
 
@@ -323,7 +328,8 @@ def get_right_contour(node: TreeNode, mod_sum: float = 0.0, right_contour: dict 
     if right_contour.get(node.depth) is None:
         right_contour[node.depth] = node.x + mod_sum
     else:
-        right_contour[node.depth] = max(right_contour[node.depth], node.x + mod_sum)
+        right_contour[node.depth] = max(
+            right_contour[node.depth], node.x + mod_sum)
 
     mod_sum += node.mod
 
@@ -354,20 +360,24 @@ def get_minimum_distance_between(left_node: TreeNode, right_node: TreeNode) -> f
 
     # 左ノードの右輪郭を取得
     left_node_right_contour = {}
-    get_right_contour(left_node, mod_sum=0, right_contour=left_node_right_contour)
+    get_right_contour(left_node, mod_sum=0,
+                      right_contour=left_node_right_contour)
 
     # 右ノードの左輪郭を取得
     right_node_left_contour = {}
-    get_left_contour(right_node, mod_sum=0, left_contour=right_node_left_contour)
+    get_left_contour(right_node, mod_sum=0,
+                     left_contour=right_node_left_contour)
 
     # 輪郭の辞書のキーは階層を表しているので、その数字の最大値が輪郭の深さになる
     # 輪郭の深さの短い方を取得する
-    min_depth = min(max(left_node_right_contour.keys()), max(right_node_left_contour.keys()))
+    min_depth = min(max(left_node_right_contour.keys()),
+                    max(right_node_left_contour.keys()))
 
     # 左右のツリー間が各階層でどのくらい離れているかを調べ、その最小値を求める
-    min_distance :float = sys.float_info.max
+    min_distance: float = sys.float_info.max
     for depth in range(right_node.depth + 1, min_depth + 1):
-        distance = right_node_left_contour[depth] - left_node_right_contour[depth]
+        distance = right_node_left_contour[depth] - \
+            left_node_right_contour[depth]
         if distance < min_distance:
             min_distance = distance
 
@@ -425,7 +435,7 @@ def equalize_position(node: TreeNode) -> bool:
         _type_: _description_
     """
 
-    # 元々の自分の位置を記録して、変化があったかを確認する
+    # 元々の自分の位置を記録して、自分自身が右に動いたか、を確認できるようにする
     node_x = node.x
 
     # 自分は兄弟における何番目か
@@ -436,18 +446,15 @@ def equalize_position(node: TreeNode) -> bool:
 
     # 間に兄弟ノードがないなら、位置を調整する対象がないので何もしない
     if num_nodes_between <= 0:
-        return
+        return False
 
     # 一番左の兄弟と、自分との間の距離を求める
     width = node.x - node.get_left_most_sibling().x
 
     # 間にいる兄弟の数を考慮して望ましい間隔を求める
-    interval = width / (num_nodes_between + 1)
+    desired_interval = width / (num_nodes_between + 1)
 
-    # 最小でも確保したい間隔
-    minimal_distance = MINIMAL_X_DISTANCE
-
-    # 左端の一つ右のノードから始めて、自分まで
+    # 左端の一つ右のノードから始めて、自分に至るまで
     for i in range(1, node_index + 1):
         mid_node = node.parent.children[i]
         prev_node = node.parent.children[i-1]
@@ -462,20 +469,21 @@ def equalize_position(node: TreeNode) -> bool:
         else:
             # 左隣との距離を計測して重なっていれば右に移動する
             distance = get_minimum_distance_between(prev_node, mid_node)
-            if distance < minimal_distance:
-                shift_value = minimal_distance - distance
+            if distance < MINIMAL_X_DISTANCE:
+                shift_value = MINIMAL_X_DISTANCE - distance
                 mid_node.x += shift_value
                 mid_node.mod += shift_value
 
-        # 左隣りとの間隔が狭ければ、広げる
-        if mid_node.x - prev_node.x < interval:
-            shift_value = interval - mid_node.x + prev_node.x
+        # 左隣りとの間隔が、望まれる間隔よりも狭ければ広げる
+        if mid_node.x - prev_node.x < desired_interval:
+            shift_value = desired_interval - mid_node.x + prev_node.x
             mid_node.x += shift_value
             mid_node.mod += shift_value
 
-    # 元の位置から変わっていたらTrueを返す
+    # 元の位置から変わっていたらTrueを返し、変わらなければFalseを返す
     if node.x - node_x > 0:
         return True
+    return False
 
 
 def calc_x_preorder(root: TreeNode, mod_sum: float = 0.0):
@@ -637,29 +645,32 @@ if __name__ == '__main__':
 
             # 8
             TreeNode("root",
-                     TreeNode("BigLeft",
-                              TreeNode("L1"),
-                              TreeNode("L2"),
-                              TreeNode("L3"),
-                              TreeNode("L4"),
-                              TreeNode("L5"),
-                              TreeNode("L6"),
-                              TreeNode("L7", TreeNode("LL1"))),
-                     TreeNode("M1"),
+                     TreeNode("M1",
+                              TreeNode("M1L1"),
+                              TreeNode("M1L2"),
+                              TreeNode("M1L3"),
+                              TreeNode("M1L4"),
+                              TreeNode("M1L5",
+                                       TreeNode("L5L1"), TreeNode("L5R1")),
+                              TreeNode("M1L6",
+                                       TreeNode("L6L1"), TreeNode("L6R1")),
+                              TreeNode("M1L7",
+                                       TreeNode("LL1"))),
                      TreeNode("M2"),
-                     TreeNode("M3", TreeNode("M31")),
+                     TreeNode("M3"),
                      TreeNode("M4",
-                              TreeNode("M4L"), TreeNode("M4C"), TreeNode("M4R",
-                                                                         TreeNode("M4RC"))),
-                     TreeNode("BigRight",
-                              TreeNode("BRR",
-                                       TreeNode("BR1"),
-                                       TreeNode("BR2"),
-                                       TreeNode("BR3"),
-                                       TreeNode("BR4"),
-                                       TreeNode("BR5"),
-                                       TreeNode("BR6"),
-                                       TreeNode("BR7")))),
+                               TreeNode("M4C1",
+                                        TreeNode("M4C1L1"), TreeNode("M4C1L2"))),
+                     TreeNode("M5",
+                              TreeNode("M4L",
+                                       TreeNode("M4LL1")),
+                              TreeNode("M4C",
+                                       TreeNode("M4CL1"), TreeNode("M4CC")),
+                              TreeNode("M4CR1",
+                                       TreeNode("M4RC"))),
+                     TreeNode("M6",
+                              TreeNode("M6C",
+                                       TreeNode("M6CR1"), TreeNode("M6CR2"), TreeNode("M6CR3"), TreeNode("M6CR4"), TreeNode("M6CR5"), TreeNode("M6CR6"), TreeNode("M6CR7")))),
 
             # 9
             TreeNode("root",
@@ -676,11 +687,9 @@ if __name__ == '__main__':
                                        TreeNode("I"),
                                        TreeNode("J"),
                                        TreeNode("K"),
-                                       TreeNode("L"))),
-                     )
+                                       TreeNode("L"))))
         ]
         return trees
-
 
     def test_tree(tree, filename):
         calc_y_preorder(tree)
@@ -688,7 +697,6 @@ if __name__ == '__main__':
         calc_x_preorder(tree)
         dump_tree(tree)
         save_png(tree, filename)
-
 
     def main():
         trees = create_test_TreeNode()
