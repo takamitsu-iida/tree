@@ -5,11 +5,12 @@
 
 import sys
 
-MINIMAL_X_DISTANCE: float = 1.0
-MINIMAL_Y_DISTANCE: float = 1.0
-
 
 class TreeNode:
+
+    # ノード間の最小距離をクラス変数として定義
+    MINIMAL_X_DISTANCE: float = 1.0
+    MINIMAL_Y_DISTANCE: float = 1.0
 
     def __init__(self, node_name="", *children):
 
@@ -169,7 +170,7 @@ def calc_y_preorder(root: TreeNode, depth: int = 0):
 
     # Y座標は深さにMINIMAL_Y_DISTANCEをかけたものを設定
     # 別途、見栄えを調整するときに変更すればよい
-    root.y = depth * MINIMAL_Y_DISTANCE
+    root.y = depth * TreeNode.MINIMAL_Y_DISTANCE
 
     for child in root.children:
         calc_y_preorder(child, depth + 1)
@@ -202,7 +203,7 @@ def calc_x_postorder(node: TreeNode):
     # postorder処理
     #
 
-    minimal_distance = MINIMAL_X_DISTANCE
+    minimal_distance = TreeNode.MINIMAL_X_DISTANCE
 
     #
     # 子がいない場合
@@ -242,8 +243,7 @@ def calc_x_postorder(node: TreeNode):
     else:
 
         # 子の中心位置を求める
-        center_x: float = (node.get_left_most_child().x +
-                           node.get_right_most_child().x) / 2
+        center_x: float = (node.get_left_most_child().x + node.get_right_most_child().x) / 2
 
         if node.is_left_most():
             # 自分自身が兄弟ノードの一番左なら、自分は兄弟における基準位置になる
@@ -301,8 +301,7 @@ def get_left_contour(node: TreeNode, mod_sum: float = 0.0, left_contour: dict = 
     if left_contour.get(node.depth) is None:
         left_contour[node.depth] = node.x + mod_sum
     else:
-        left_contour[node.depth] = min(
-            left_contour[node.depth], node.x + mod_sum)
+        left_contour[node.depth] = min(left_contour[node.depth], node.x + mod_sum)
 
     mod_sum += node.mod
 
@@ -328,8 +327,7 @@ def get_right_contour(node: TreeNode, mod_sum: float = 0.0, right_contour: dict 
     if right_contour.get(node.depth) is None:
         right_contour[node.depth] = node.x + mod_sum
     else:
-        right_contour[node.depth] = max(
-            right_contour[node.depth], node.x + mod_sum)
+        right_contour[node.depth] = max(right_contour[node.depth], node.x + mod_sum)
 
     mod_sum += node.mod
 
@@ -360,24 +358,20 @@ def get_minimum_distance_between(left_node: TreeNode, right_node: TreeNode) -> f
 
     # 左ノードの右輪郭を取得
     left_node_right_contour = {}
-    get_right_contour(left_node, mod_sum=0,
-                      right_contour=left_node_right_contour)
+    get_right_contour(left_node, mod_sum=0, right_contour=left_node_right_contour)
 
     # 右ノードの左輪郭を取得
     right_node_left_contour = {}
-    get_left_contour(right_node, mod_sum=0,
-                     left_contour=right_node_left_contour)
+    get_left_contour(right_node, mod_sum=0, left_contour=right_node_left_contour)
 
     # 輪郭の辞書のキーは階層を表しているので、その数字の最大値が輪郭の深さになる
     # 輪郭の深さの短い方を取得する
-    min_depth = min(max(left_node_right_contour.keys()),
-                    max(right_node_left_contour.keys()))
+    min_depth = min(max(left_node_right_contour.keys()), max(right_node_left_contour.keys()))
 
     # 左右のツリー間が各階層でどのくらい離れているかを調べ、その最小値を求める
     min_distance: float = sys.float_info.max
     for depth in range(right_node.depth + 1, min_depth + 1):
-        distance = right_node_left_contour[depth] - \
-            left_node_right_contour[depth]
+        distance = right_node_left_contour[depth] - left_node_right_contour[depth]
         if distance < min_distance:
             min_distance = distance
 
@@ -391,7 +385,7 @@ def resolve_overlap(node: TreeNode):
         node (TreeNode): _description_
     """
     # サブツリー間の最小間隔として確保したい量
-    minimal_distance = MINIMAL_X_DISTANCE
+    minimal_distance = TreeNode.MINIMAL_X_DISTANCE
 
     # 兄弟の左端から始めて、自分の左隣りまで、に関して、
     sibling = node.get_left_most_sibling()
@@ -469,8 +463,8 @@ def equalize_position(node: TreeNode) -> bool:
         else:
             # 左隣との距離を計測して重なっていれば右に移動する
             distance = get_minimum_distance_between(prev_node, mid_node)
-            if distance < MINIMAL_X_DISTANCE:
-                shift_value = MINIMAL_X_DISTANCE - distance
+            if distance < TreeNode.MINIMAL_X_DISTANCE:
+                shift_value = TreeNode.MINIMAL_X_DISTANCE - distance
                 mid_node.x += shift_value
                 mid_node.mod += shift_value
 
@@ -501,6 +495,9 @@ def calc_x_preorder(root: TreeNode, mod_sum: float = 0.0):
 
     # 自分のmodを加算して、子を動かす
     mod_sum += root.mod
+
+    # 自分のmodはこれでリセット
+    root.mod = 0
 
     for child in root.children:
         calc_x_preorder(child, mod_sum)
