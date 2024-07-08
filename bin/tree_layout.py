@@ -128,24 +128,24 @@ class TreeNode:
         return len(self.children)
 
 
-def preorder(root: TreeNode):
-    if root == None:
+def preorder(node: TreeNode):
+    if node == None:
         return
 
-    yield root
+    yield node
 
-    for child in root.children:
+    for child in node.children:
         yield from preorder(child)
 
 
-def postorder(root: TreeNode):
-    if root == None:
+def postorder(node: TreeNode):
+    if node == None:
         return
 
-    for child in root.children:
+    for child in node.children:
         yield from postorder(child)
 
-    yield root
+    yield node
 
 
 def calc_y_preorder(node: TreeNode, depth: int = 0):
@@ -480,10 +480,10 @@ def equalize_position(node: TreeNode) -> bool:
     return False
 
 
-def calc_x_preorder(root: TreeNode, mod_sum: float = 0.0):
+def calc_x_preorder(node: TreeNode, mod_sum: float = 0.0):
     """preorderトラバーサルで探索してノードのX座標を確定します
     """
-    if root == None:
+    if node == None:
         return
 
     #
@@ -491,41 +491,41 @@ def calc_x_preorder(root: TreeNode, mod_sum: float = 0.0):
     #
 
     # 自分の位置をmod_sumd移動
-    root.x += mod_sum
+    node.x += mod_sum
 
     # 自分のmodを加算して、子を動かす
-    mod_sum += root.mod
+    mod_sum += node.mod
 
     # 自分のmodはこれでリセット
-    root.mod = 0
+    node.mod = 0
 
-    for child in root.children:
+    for child in node.children:
         calc_x_preorder(child, mod_sum)
 
 
-def print_tree(root, indent=0):
-    if root is None:
+def print_tree(node, indent=0):
+    if node is None:
         return
 
     # 現在のノードを出力
-    print(f"{indent * ' '}{root.node_name}")
+    print(f"{indent * ' '}{node.node_name}")
 
-    for child in root.children:
+    for child in node.children:
         print_tree(child, indent + 1)
 
 
-def dump_tree(root, indent=0):
-    if root is None:
+def dump_tree(node, indent=0):
+    if node is None:
         return
 
     # 現在のノードを出力
-    print(f"{indent * ' '}{root.node_name} (x,y)=({root.x}, {root.y}) mod={root.mod}")
+    print(f"{indent * ' '}{node.node_name} (x,y)=({node.x}, {node.y}) mod={node.mod}")
 
-    for child in root.children:
+    for child in node.children:
         dump_tree(child, indent + 1)
 
 
-def save_png(root, filename):
+def save_png(node, filename):
     import matplotlib.pyplot as plt
     import networkx as nx
 
@@ -545,10 +545,10 @@ def save_png(root, filename):
             get_postion_preorder(child, position)
 
     position = {}
-    get_postion_preorder(root, position)
+    get_postion_preorder(node, position)
 
     G = nx.Graph()
-    add_tree(root, G)
+    add_tree(node, G)
     # nx.draw(G, pos=position, node_size=100)
     nx.draw(G, pos=position, node_size=300, with_labels=True, font_size=8, font_color='white')
     plt.savefig(filename)
