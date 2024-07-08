@@ -12,6 +12,8 @@ https://llimllib.github.io/pymag-trees/
 
 一般的なツリー構造の前に、二分探索木で考えます。
 
+<br>
+
 ### 二分探索木とは
 
 > 参考文献
@@ -32,9 +34,9 @@ https://llimllib.github.io/pymag-trees/
 
 このルールに従うと、二分探索木の最小の値は左のサブツリーの末端に存在し、最大の値は右のサブツリーの末端に存在します。
 
-bin/binary_seach_tree.py
+[bin/binary_seach_tree.py](/bin/binary_search_tree.py) はノードの追加・削除のルールをアルゴリズム辞典の通りに実装したものです。
 
-ノードの追加・削除のルールをアルゴリズム辞典の通りに実装したものです。
+<br>
 
 ### preorder探索とpostorder探索
 
@@ -74,36 +76,41 @@ def traverse_postorder(root: BinaryTreeNode):
 
 処理を書く場所が違うだけで、ほぼ同じです。
 
+<br>
+
 ## Reingold-Tilfordアルゴリズム
 
-これら6個の原則を守るように描かれます。
+Reingold-Tilfordアルゴリズムでは、以下の6個の原則を守るように描かれます。
 
-Principle 1: The edges of the tree should not cross each other.
+<dl>
+<dt>Principle 1</dt> <dd>The edges of the tree should not cross each other.（エッジは交差しない）</dd>
 
-Principle 2: All nodes at the same depth should be drawn on the same horizontal line. This helps make clear the structure of the tree.
+<dt>Principle 2</dt> <dd>All nodes at the same depth should be drawn on the same horizontal line.（同じ階層のノードは同じ高さに）</dd>
 
-Principle 3: Trees should be drawn as narrowly as possible.
+<dt>Principle 3</dt> <dd>Trees should be drawn as narrowly as possible.（ツリーはできるだけ狭く）</dd>
 
-Principle 4: A parent should be centered over its children.
+<dt>Principle 4</dt> <dd>A parent should be centered over its children.（親は子の中央に）</dd>
 
-Principle 5: A subtree should be drawn the same no matter where in the tree it lies.
+<dt>Principle 5</dt> <dd>A subtree should be drawn the same no matter where in the tree it lies.（サブツリーはどこにあっても同じ形状を保つように）</dd>
 
-Principle 6: The child nodes of a parent node should be evenly spaced.
+<dt>Principle 6</dt> <dd>The child nodes of a parent node should be evenly spaced.（兄弟ノードの間隔はできるだけ一定に）</dd>
+</dl>
 
 Principle 2を守るのは容易です。
-ツリーを頂点からpreorder探索でたどっていき、深さに応じてY座標を決めるだけです。
+ツリーを頂点から（すなわちpreorder探索で）たどっていき、深さに応じてY座標を決めるだけです。
 
 問題はX座標の決め方です。
 
-人間がツリーを書くときには頂点から書き始めた方が楽ですが、Reingold-Tilfordでは、postorder探索、すなわち下から上に向かって決めていきます。
+人間がツリーを書くときには頂点から書き始めた方が楽ですが、Reingold-Tilfordでは末端から頂点に向かって（すなわちpostorder探索で）決めていきます。
 
 postorder探索で末端にたどり着いたとき、そこでできることは何もありません。
-上位ノード（つまり親）へのポインタを持っていないため、末端のノードが親や兄弟を参照することはできないからです。
 
-一つ上の階層に上がるとノードは子を持つようになります。
-子の持ち方は次の３パターンです。
+二分探索木では上位ノード（つまり親）へのポインタを持っていないため、末端のノードが親や兄弟を参照することはできないからです。
 
-左だけに子がいるパターン。左の子のX座標は、自分のX座標から相対的に-1します。
+一つ上の階層に戻るとノードは子を持ちます。子の持ち方は次の３パターンです。
+
+左だけに子がいるパターン。左の子のX座標を、自分のX座標から相対的に-1します。
+自分のX座標はさらに上位のノードが決めてくれるので、初期値のままにしておきます。
 
 ```text
   o
@@ -111,7 +118,8 @@ postorder探索で末端にたどり着いたとき、そこでできること�
 o
 ```
 
-右だけに子がいるパターン。右の子のX座標は、自分のX座標から相対的に+1にします。
+右だけに子がいるパターン。右の子のX座標を、自分のX座標から相対的に+1します。
+自分のX座標は初期値のままにしておきます。
 
 ```text
   o
@@ -119,7 +127,7 @@ o
     o
 ```
 
-左と右に子を持つパターン。この場合は複雑です。
+左と右に子を持つパターン。この場合、左右の子の位置を決めるのは複雑です。
 単純に左の子は-1、右の子は+1、としてしまうと、下の方でツリーが重なってしまうかもしれないからです。
 
 ```text
@@ -134,16 +142,14 @@ o   o
 一番右にいるノードを取り出したものが右輪郭（right contour）です。
 
 ２つのツリーが重なっているかどうかを判定するには、この輪郭同士を比較します。
-
-左の子の右輪郭（right contour）と、右の子の左輪郭（left contour）を比較して、
-重なりが起こらないように子の位置を決める必要があります。
+左の子の右輪郭と、右の子の左輪郭を比較して、重なりが起こらないように子の位置を決める必要があります。
 
 ### 輪郭（contour）の作り方
 
-ノードから親や兄弟を辿れるなら、その都度輪郭を取得することもできますが、
-二分探索木の場合は親から子への参照しかできませんので、ノードの中に輪郭情報を保管しておく必要があります。
-
-全てのノードは初期値として左輪郭、右輪郭共に`[0]`を持ちます。
+ノードから親や兄弟を辿れるなら、必要に応じて知りたい輪郭を取得すればよいのですが、
+二分探索木の場合は親から子への参照しかできませんので、そういうわけにはいきません。
+ノードの中に自分の左輪郭、右輪郭の情報を保管しておく必要があります。
+そこで、全てのノードに初期値として左輪郭、右輪郭共にリスト `[0]` を持たせます。
 
 ```python
 class BinaryTreeNode:
@@ -158,9 +164,9 @@ class BinaryTreeNode:
         self.right_contour = [0]
 ```
 
-postorder探索で階層を上がるたびに、子が持つ左輪郭・右輪郭に自分の位置を加えていきます。
+postorder探索で階層を上がるたびに、子が持つ左輪郭リスト・右輪郭リストに自分の位置を加えていきます。
 
-もとに戻って、左右に子がいるパターンでのX座標の位置決めです。
+もとに戻って、左右に子がいるパターンでのX座標の決め方です。
 
 ```text
   o
@@ -168,10 +174,12 @@ postorder探索で階層を上がるたびに、子が持つ左輪郭・右輪�
 o   o
 ```
 
-右の子が持つ左輪郭と、左の子が持つ右輪郭を、各階層で引き算したとき、
+右の子が持つ左輪郭の座標リストから、左の子が持つ右輪郭の座標リストを各階層で引き算したとき、
 
 - プラスの場合は離れている
+
 - マイナスの場合は重なっている
+
 - ゼロの場合は左のサブツリーの右端と、右のサブツリーの左端が重なっている
 
 ということになります。
@@ -179,8 +187,25 @@ o   o
 `min(右の子の左輪郭 - 左の子の右輪郭)` を計算して、
 これが十分な大きさになるように左の子は左に、右の子は右に動かします。
 
+### 相対位置から絶対位置への変換処理
 
-## 例
+ボトムアップで下から上に探索するときに、親は子の位置を自分からの相対位置で指定しています。
+これを絶対位置に反映させるには、今度は頂点から順に末端に向けて適用していく必要があります。
+つまりpreorder探索で実行します。
+
+```python
+    if node.left != None:
+        # 左の子の位置を決める
+        node.left.x = node.left.relative_x + node.x
+
+    if node.right != None:
+        # 右の子の位置を決める
+        node.right.x = node.right.relative_x + node.x
+```
+
+## 二分探索木での位置決めの例
+
+二分探索木に以下の入力を与えたときの描画結果です。
 
 `[15, 9, 23, 3, 12, 17, 28, 8]`
 

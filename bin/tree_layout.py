@@ -626,23 +626,6 @@ if __name__ == '__main__':
 
             # 7
             TreeNode("root",
-                     TreeNode("L1",
-                              TreeNode("LL1"),
-                              TreeNode("LR1",
-                                       TreeNode("LRL"),
-                                       TreeNode("LRR"))),
-                     TreeNode("R1",
-                              TreeNode("RR2",
-                                       TreeNode("RR3",
-                                                TreeNode("RRL",
-                                                         TreeNode("RRLL",
-                                                                  TreeNode(
-                                                                      "RRLLL"),
-                                                                  TreeNode("RRLLR")),
-                                                         TreeNode("RRLR")))))),
-
-            # 8
-            TreeNode("root",
                      TreeNode("E",
                               TreeNode("A"),
                               TreeNode("D",
@@ -658,7 +641,7 @@ if __name__ == '__main__':
                                        TreeNode("K"),
                                        TreeNode("L")))),
 
-            # 9
+            # 8
             TreeNode("root",
                      TreeNode("M1",
                               TreeNode("M1L1"),

@@ -89,10 +89,11 @@ def print_binary_tree(root: BinaryTreeNode, level=0):
 
 
 def reingold_tilford_postorder(node):
-    """_summary_
+    """postorder探索で末端ノードから順に、X軸方向の相対位置を決める
 
-    X軸方向の位置（水平オフセットの計算）は、後順トラバーサルで行う。
-    各ノードで現在のノードをルートとするツリーの輪郭を構築し、その輪郭を使ってサブツリー同士が重ならないように配置する。
+    末端から決めていくのでX軸方向の位置を絶対座標で決めることはできず、上位ノードからの相対位置を決定する。
+    後ほどpreorder探索を実行し、上位ノードからの相対位置をもとにX軸方向の絶対位置を決定する。
+    各ノードで左輪郭、右輪郭を構築し、その輪郭を使ってサブツリー同士が重ならないように配置する。
 
     Args:
         node (_type_): _description_
@@ -110,7 +111,7 @@ def reingold_tilford_postorder(node):
     #
 
     # 末端にたどり着いて、左にも右にも子がいない場合は何もせずに、ひとつ上の階層に戻る
-    # 自分の位置は親ノードによって後で決められる
+    # 自分の相対位置は親ノードによって後で決められる
     if node.left == None and node.right == None:
         return
 
@@ -123,17 +124,17 @@ def reingold_tilford_postorder(node):
         #    /
         #   子
 
-        # 左の子は、自分からみて -1
+        # 左の子は、自分からみて -1 の相対位置に設定する
         node.left.relative_x = -1
 
         # 自分の左輪郭を構築する
         # 左の子が持っている左輪郭をコピーして、先頭に自分の相対位置 0 を追加する
-        # ただし、左の子は相対位置を移動させたので、左輪郭もまとめて移動する
+        # ただし、左の子は相対位置を-1移動させたので、左輪郭も全て-1する
         node.left_contour = [0] + [x + node.left.relative_x for x in node.left.left_contour]
 
         # 自分の右輪郭を構築する
         # 右に子がいないので、左の子が持っている右輪郭をコピーして、先頭に自分の相対位置 0 を追加する
-        # ただし、左の子は相対位置を移動させたので、左輪郭もまとめて移動する
+        # ただし、左の子は相対位置を-1移動させたので、左輪郭も全て-1する
         node.right_contour = [0] + [x + node.left.relative_x for x in node.left.right_contour]
 
     elif node.right != None and node.left == None:
@@ -143,7 +144,7 @@ def reingold_tilford_postorder(node):
         #       \
         #        子
 
-        # 右の子の自分からの相対位置は +1
+        # 右の子は、自分からみて +1 の相対位置に設定する
         node.right.relative_x = +1
 
         # 自分の左輪郭を構築する
@@ -162,7 +163,7 @@ def reingold_tilford_postorder(node):
         #   子   子
 
         # 左の子を頂点とするサブツリーと、右の子を頂点とするサブツリーで重なりがあるかもしれない
-        # 左の子のサブツリーの右輪郭、右の子のサブツリーの左輪郭を、階層ごとに比較して、重なってたらずらす
+        # 左の子のサブツリーの右輪郭、右の子のサブツリーの左輪郭を、階層ごとに比較して、重ならないように左右の子の間隔を広げる
         # ただし、必ずしも全ての階層を比較する必要はなく、サブツリーが存在する階層だけを調べればよい
 
         # 右の子が持つ左輪郭の長さと、左の子が持つ右輪郭の長さで、短い方を取る
@@ -191,14 +192,14 @@ def reingold_tilford_postorder(node):
             # 左の子のサブツリーと、右の子のサブツリーで重複しているので、間隔を広げる必要がある
             shift_value = minimal_distance - minimum_distance
 
-            # 左の子のサブツリーは左に、右の子のサブツリーは右に動かしたい
+            # 左の子は左に、右の子は右に動かしたい
             # 左右均等に動かすので、動かす量は2の倍数にする
             if abs(shift_value) % 2 == 0:
                 # 偶数なので+2にすることで、左サブツリーは左に1、右サブツリーは右に1、というように均等にずらせる
-                shift_value = abs(shift_value) + 2
+                shift_value = abs(shift_value) + BinaryTreeNode.MINIMAL_X_DISTANCE + BinaryTreeNode.MINIMAL_X_DISTANCE
             else:
                 # 奇数なので+1して、合計で2の倍数にする
-                shift_value = abs(shift_value) + 1
+                shift_value = abs(shift_value) + BinaryTreeNode.MINIMAL_X_DISTANCE
 
             # 左の子は、自分からみて、マイナスの方向にずらす
             node.left.relative_x = -1 * shift_value // 2
