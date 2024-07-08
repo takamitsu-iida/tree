@@ -8,6 +8,10 @@ import sys
 
 class BinaryTreeNode:
 
+    # ノード間の最小距離をクラス変数として定義
+    MINIMAL_X_DISTANCE = 1
+    MINIMAL_Y_DISTANCE = 1
+
     def __init__(self, data):
         self.data = data
         self.left = None
@@ -87,11 +91,8 @@ def print_binary_tree(root: BinaryTreeNode, level=0):
 def reingold_tilford_postorder(node):
     """_summary_
 
-    水平オフセットの計算は、後順トラバーサルによって行われます。
-    各ノードで、
-    (1) 自分からみた左サブツリー、右サブツリーの輪郭を構築する
-    (2) サブツリーをどのくらい離して配置するか (つまり、現在のノードでの相対位置) を計算し、
-    (3) 現在のノードをルートとするツリーの輪郭を構築します。
+    X軸方向の位置（水平オフセットの計算）は、後順トラバーサルで行う。
+    各ノードで現在のノードをルートとするツリーの輪郭を構築し、その輪郭を使ってサブツリー同士が重ならないように配置する。
 
     Args:
         node (_type_): _description_
@@ -109,10 +110,12 @@ def reingold_tilford_postorder(node):
     #
 
     # 末端にたどり着いて、左にも右にも子がいない場合は何もせずに、ひとつ上の階層に戻る
+    # 自分の位置は親ノードによって後で決められる
     if node.left == None and node.right == None:
         return
 
-    # ここから先の処理は左か右に必ず子がいる
+    # ここから先の処理は左か右に必ず子がいるので、子の位置を決めていく
+
     if node.left != None and node.right == None:
 
         # 左に子がいて、右にいない場合
@@ -123,11 +126,13 @@ def reingold_tilford_postorder(node):
         # 左の子は、自分からみて -1
         node.left.relative_x = -1
 
-        # 左輪郭は、左の子が持っている左輪郭をコピーして、先頭に自分の相対位置 0 を追加する
+        # 自分の左輪郭を構築する
+        # 左の子が持っている左輪郭をコピーして、先頭に自分の相対位置 0 を追加する
         # ただし、左の子は相対位置を移動させたので、左輪郭もまとめて移動する
         node.left_contour = [0] + [x + node.left.relative_x for x in node.left.left_contour]
 
-        # 右輪郭は、左の子が持っている右輪郭をコピーして、先頭に自分の相対位置 0 を追加する
+        # 自分の右輪郭を構築する
+        # 右に子がいないので、左の子が持っている右輪郭をコピーして、先頭に自分の相対位置 0 を追加する
         # ただし、左の子は相対位置を移動させたので、左輪郭もまとめて移動する
         node.right_contour = [0] + [x + node.left.relative_x for x in node.left.right_contour]
 
@@ -141,12 +146,12 @@ def reingold_tilford_postorder(node):
         # 右の子の自分からの相対位置は +1
         node.right.relative_x = +1
 
-        # 左輪郭
-        # 左に子がいないので、右の子が持っている左輪郭を引き継いで使う（右の子は相対位置をずらしたので、輪郭もずらす）
+        # 自分の左輪郭を構築する
+        # 左に子がいないので、右の子が持っている左輪郭を引き継いで使う
         node.left_contour = [0] + [x + node.right.relative_x for x in node.right.left_contour]
 
-        # 右輪郭
-        # 左に子がいないので、右の子が持っている右輪郭を引き継いで使う（右の子は相対位置をずらしたので、輪郭もずらす）
+        # 自分の右輪郭を構築する
+        # 左に子がいないので、右の子が持っている右輪郭を引き継いで使う
         node.right_contour = [0] + [x + node.right.relative_x for x in node.right.right_contour]
 
     else:
@@ -156,60 +161,64 @@ def reingold_tilford_postorder(node):
         #    /  \
         #   子   子
 
-        # 自分からの相対位置しか計算していないので、左のサブツリー、右のサブツリーで重なり合ってしまう
-        # 左のサブツリーの右輪郭、右のサブツリーの左輪郭を、階層ごとに比較して、重なってたらずらす
-        # ただし、必ずしも全ての階層を比較する必要はなく、
-        # サブツリーが重なり合っているレベルだけを調べればよいので、それぞれの長さを調べる
+        # 左の子を頂点とするサブツリーと、右の子を頂点とするサブツリーで重なりがあるかもしれない
+        # 左の子のサブツリーの右輪郭、右の子のサブツリーの左輪郭を、階層ごとに比較して、重なってたらずらす
+        # ただし、必ずしも全ての階層を比較する必要はなく、サブツリーが存在する階層だけを調べればよい
+
         # 右の子が持つ左輪郭の長さと、左の子が持つ右輪郭の長さで、短い方を取る
         minimum_height = min(len(node.right.left_contour), len(node.left.right_contour))
 
-        # 各階層で、右の子の左輪郭から、左の子の右輪郭を引いて、その差を取る
-        # これは、左右のサブツリーの間の距離を表している
-        # これがマイナスの場合は、その階層で重なっている、ということ
-        # ゼロであれば左サブツリーの右端と、右サブツリーの左端がちょうど一致している、ということ
-        # プラスであれば、左右のサブツリーが離れている、ということ
-        distances = []
+        # 各階層で、右の子の左輪郭から、左の子の右輪郭を引いて、差を計算する
+        # これが
+        #   - マイナスの場合は、その階層で重なりが発生している
+        #   - ゼロであれば左サブツリーの右端と、右サブツリーの左端がちょうど一致している
+        #   - プラスであれば、左右のサブツリーが離れている
+        # ということになる
+        # 差の最小値を求める
+        minimum_distance = sys.maxsize
         for i in range(minimum_height):
-            distances.append(node.right.left_contour[i] - node.left.right_contour[i])
+            diff = node.right.left_contour[i] - node.left.right_contour[i]
+            if diff < minimum_distance:
+                minimum_distance = diff
 
-        # 各階層での距離の最小値を求める
-        minimum_distance = min(distances)
+        # 最低限確保したい間隔
+        minimal_distance = BinaryTreeNode.MINIMAL_X_DISTANCE
 
-        # 最低限、どのくらい移動すればいいか、を求める
-        minimal_movement = 0
+        # どのくらい移動すべきか、を求める
+        shift_value = 0
 
-        if minimum_distance <= 0:
-            # 重なっているので、左右のサブツリーを離す必要がある
-            # サブツリーが重ならないように、左サブツリーは左に、右サブツリーは右に動かす
+        if minimum_distance + shift_value <= minimum_distance:
+            # 左の子のサブツリーと、右の子のサブツリーで重複しているので、間隔を広げる必要がある
+            shift_value = minimal_distance - minimum_distance
+
+            # 左の子のサブツリーは左に、右の子のサブツリーは右に動かしたい
             # 左右均等に動かすので、動かす量は2の倍数にする
-            if abs(minimum_distance) % 2 == 0:
+            if abs(shift_value) % 2 == 0:
                 # 偶数なので+2にすることで、左サブツリーは左に1、右サブツリーは右に1、というように均等にずらせる
-                minimal_movement = abs(minimum_distance) + 2
+                shift_value = abs(shift_value) + 2
             else:
                 # 奇数なので+1して、合計で2の倍数にする
-                minimal_movement = abs(minimum_distance) + 1
+                shift_value = abs(shift_value) + 1
 
-        # 左の子は、自分からみて、マイナスの方向にずらす
-        node.left.relative_x = -1 * minimal_movement // 2
+            # 左の子は、自分からみて、マイナスの方向にずらす
+            node.left.relative_x = -1 * shift_value // 2
 
-        # 右の子は、自分からみて、プラスの方向にずらす
-        node.right.relative_x = minimal_movement // 2
+            # 右の子は、自分からみて、プラスの方向にずらす
+            node.right.relative_x = shift_value // 2
 
-        # 直下の子の移動量に応じて、輪郭を再計算する
+            # 自分の左輪郭を再構築する
+            if len(node.right.left_contour) > len(node.left.left_contour):
+                # 右サブツリーの左輪郭の方が長い場合、足りない分をそこから補う
+                node.left_contour =  [0] + [x + node.left.relative_x for x in node.left.left_contour] + [ x + node.right.relative_x for x in node.right.left_contour[len(node.left.left_contour):]]
+            else:
+                # 左サブツリーの左輪郭の方が長いなら、足りない部分はない
+                node.left_contour = [0] + [x + node.left.relative_x for x in node.left.left_contour]
 
-        # 左輪郭をずらす
-        if len(node.right.left_contour) > len(node.left.left_contour):
-            # 右サブツリーの左輪郭の方が長い場合、足りない分をそこから補う
-            node.left_contour =  [0] + [x + node.left.relative_x for x in node.left.left_contour] + [ x + node.right.relative_x for x in node.right.left_contour[len(node.left.left_contour):]]
-        else:
-            # 左サブツリーの左輪郭の方が長いなら、足りない部分はない
-            node.left_contour = [0] + [x + node.left.relative_x for x in node.left.left_contour]
-
-        # 右輪郭をずらす
-        if len(node.left.right_contour) > len(node.right.right_contour):
-            node.right_contour =  [0] + [x + node.right.relative_x for x in node.right.right_contour] + [x + node.left.relative_x for x in node.left.right_contour[len(node.right.right_contour):]]
-        else:
-            node.right_contour = [0] + [x + node.right.relative_x for x in node.right.right_contour]
+            # 自分の右輪郭を再構築する
+            if len(node.left.right_contour) > len(node.right.right_contour):
+                node.right_contour =  [0] + [x + node.right.relative_x for x in node.right.right_contour] + [x + node.left.relative_x for x in node.left.right_contour[len(node.right.right_contour):]]
+            else:
+                node.right_contour = [0] + [x + node.right.relative_x for x in node.right.right_contour]
 
 
 def reingold_tilford_preorder(node):
@@ -229,12 +238,19 @@ def reingold_tilford_preorder(node):
         # 子の深さは自分の深さ+1
         node.left.depth = node.left.y = node.depth + 1
 
+        # 子のY軸の位置を決める
+        node.left.y = node.left.depth * BinaryTreeNode.MINIMAL_Y_DISTANCE
+
     if node.right != None:
         # 右の子の位置を決める
         node.right.x = node.right.relative_x + node.x
 
         # 子の深さは自分の深さ+1
         node.right.depth = node.right.y = node.depth + 1
+
+        # 子のY軸の位置を決める
+        node.right.y = node.right.depth * BinaryTreeNode.MINIMAL_Y_DISTANCE
+
 
     # 再帰呼び出しで深く降りていく
     reingold_tilford_preorder(node.left)
@@ -254,7 +270,7 @@ def save_png(root, filename):
         if root is None:
             return
 
-        G.add_node(root.data)
+        G.add_node(root.data, label=f"{root.data}")
 
         if root.left is not None:
             G.add_edge(root.data, root.left.data)
@@ -278,47 +294,69 @@ def save_png(root, filename):
 
     G = nx.Graph()
     add_tree(root, G)
-    nx.draw(G, pos=position, node_size=100)
+    nx.draw(G, pos=position, node_size=300, with_labels=True, font_size=8, font_color='white')
     plt.savefig(filename)
     plt.cla()
 
 
 if __name__ == '__main__':
 
-    def create_test_binary_tree():
-        # アルゴリズム図鑑にかかれている例を使ってみる
-        data_list = [15, 9, 23, 3, 12, 17, 28, 8]
-
-        # 15を頂点にして、残りは上記のリストを使って二分探索木を作成する
+    def create_binary_tree(data_list: list):
         root = insert_binary_tree(None, data_list.pop(0))
         for data in data_list:
-            insert_binary_tree(root, data)
-
+            root = insert_binary_tree(root, data)
         return root
 
+    def create_test_trees():
 
-    def main():
-        root = create_test_binary_tree()
+        trees = []
+
+        # 参考文献のアルゴリズム図鑑にかかれている例
+        data_list = [15, 9, 23, 3, 12, 17, 28, 8]
+        trees.append(create_binary_tree(data_list))
+
+        # Wikipediaの例
+        data_list = [8, 3, 10, 1, 6, 14, 4, 7, 13]
+        trees.append(create_binary_tree(data_list))
+
+        data_list = [12, 6, 16, 2, 8, 14, 18, 4, 10, 9, 11]
+        trees.append(create_binary_tree(data_list))
+
+        data_list = [10, 5, 15, 3, 7, 13, 17, 2, 4, 6, 8, 12, 14, 16, 18]
+        trees.append(create_binary_tree(data_list))
+
+        data_list = [25, 20, 36, 10, 22, 30, 40, 5, 12, 28, 38, 48, 1, 8, 15, 18, 26, 32, 35, 39, 45, 49]
+        trees.append(create_binary_tree(data_list))
+
+        import random
+        data_list = range(1, 50)
+        data_list = random.sample(data_list, len(data_list))
+        trees.append(create_binary_tree(data_list))
+
+        return trees
+
+
+    def test_tree(root, filename):
+
         print_binary_tree(root)
 
         reingold_tilford_postorder(root)
-
         print("\nreingold_tilford_postorder done\n")
-
         for node in preorder(root):
             print(node.data, node.relative_x, (node.x, node.depth), node.left_contour, node.right_contour)
 
         reingold_tilford_preorder(root)
-
         print("\nreingold_tilford_preorder done\n")
-
         for node in preorder(root):
             print(node.data, node.relative_x, (node.x, node.depth), node.left_contour, node.right_contour)
 
-        save_png(root, "log/binary_search_tree_layout.png")
+        save_png(root, filename)
 
-        # reingold_tilford(root)
 
+    def main():
+        trees = create_test_trees()
+        for i, tree in enumerate(trees):
+            test_tree(tree, f"log/binary_search_tree_{i}.png")
         return 0
 
     sys.exit(main())

@@ -532,7 +532,7 @@ def save_png(root, filename):
     def add_tree(root, G):
         if root is None:
             return
-        G.add_node(root.node_name)
+        G.add_node(root.node_name, label=f"{root.node_name}")
         for child in root.children:
             G.add_edge(root.node_name, child.node_name)
             add_tree(child, G)
@@ -549,7 +549,8 @@ def save_png(root, filename):
 
     G = nx.Graph()
     add_tree(root, G)
-    nx.draw(G, pos=position, node_size=100)
+    # nx.draw(G, pos=position, node_size=100)
+    nx.draw(G, pos=position, node_size=300, with_labels=True, font_size=8, font_color='white')
     plt.savefig(filename)
     plt.cla()
 
