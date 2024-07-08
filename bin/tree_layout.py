@@ -148,17 +148,17 @@ def postorder(root: TreeNode):
     yield root
 
 
-def calc_y_preorder(root: TreeNode, depth: int = 0):
+def calc_y_preorder(node: TreeNode, depth: int = 0):
     """preorderトラバーサルで探索し、ノードに自身の深さを設定する
 
     サブツリーが重ならないように調整する際に、ノードの深さの情報が必要になるので、
     最初にこれを実行して深さを設定する
 
     Args:
-        root (TreeNode): _description_
+        node (TreeNode): _description_
         depth (int, optional): _description_. Defaults to 0.
     """
-    if root == None:
+    if node == None:
         return
 
     #
@@ -166,13 +166,13 @@ def calc_y_preorder(root: TreeNode, depth: int = 0):
     #
 
     # 深さをノードに設定
-    root.depth = depth
+    node.depth = depth
 
-    # Y座標は深さにMINIMAL_Y_DISTANCEをかけたものを設定
-    # 別途、見栄えを調整するときに変更すればよい
-    root.y = depth * TreeNode.MINIMAL_Y_DISTANCE
+    # Y座標は親のY座標に最小距離を加えたものに設定する
+    if node.parent:
+        node.y = node.parent.y + TreeNode.MINIMAL_Y_DISTANCE
 
-    for child in root.children:
+    for child in node.children:
         calc_y_preorder(child, depth + 1)
 
 
@@ -643,6 +643,23 @@ if __name__ == '__main__':
 
             # 8
             TreeNode("root",
+                     TreeNode("E",
+                              TreeNode("A"),
+                              TreeNode("D",
+                                       TreeNode("B"),
+                                       TreeNode("C"))),
+                     TreeNode("F"),
+                     TreeNode("N",
+                              TreeNode("G"),
+                              TreeNode("M",
+                                       TreeNode("H"),
+                                       TreeNode("I"),
+                                       TreeNode("J"),
+                                       TreeNode("K"),
+                                       TreeNode("L")))),
+
+            # 9
+            TreeNode("root",
                      TreeNode("M1",
                               TreeNode("M1L1"),
                               TreeNode("M1L2"),
@@ -668,24 +685,8 @@ if __name__ == '__main__':
                                        TreeNode("M4RC"))),
                      TreeNode("M6",
                               TreeNode("M6C",
-                                       TreeNode("M6CR1"), TreeNode("M6CR2"), TreeNode("M6CR3"), TreeNode("M6CR4"), TreeNode("M6CR5"), TreeNode("M6CR6"), TreeNode("M6CR7")))),
+                                       TreeNode("M6CR1"), TreeNode("M6CR2"), TreeNode("M6CR3"), TreeNode("M6CR4"), TreeNode("M6CR5"), TreeNode("M6CR6"), TreeNode("M6CR7"))))
 
-            # 9
-            TreeNode("root",
-                     TreeNode("E",
-                              TreeNode("A"),
-                              TreeNode("D",
-                                       TreeNode("B"),
-                                       TreeNode("C"))),
-                     TreeNode("F"),
-                     TreeNode("N",
-                              TreeNode("G"),
-                              TreeNode("M",
-                                       TreeNode("H"),
-                                       TreeNode("I"),
-                                       TreeNode("J"),
-                                       TreeNode("K"),
-                                       TreeNode("L"))))
         ]
         return trees
 

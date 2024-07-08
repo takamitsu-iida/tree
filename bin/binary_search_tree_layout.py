@@ -239,7 +239,7 @@ def reingold_tilford_preorder(node):
         node.left.depth = node.left.y = node.depth + 1
 
         # 子のY軸の位置を決める
-        node.left.y = node.left.depth * BinaryTreeNode.MINIMAL_Y_DISTANCE
+        node.left.y = node.y + BinaryTreeNode.MINIMAL_Y_DISTANCE
 
     if node.right != None:
         # 右の子の位置を決める
@@ -249,7 +249,7 @@ def reingold_tilford_preorder(node):
         node.right.depth = node.right.y = node.depth + 1
 
         # 子のY軸の位置を決める
-        node.right.y = node.right.depth * BinaryTreeNode.MINIMAL_Y_DISTANCE
+        node.right.y = node.y + BinaryTreeNode.MINIMAL_Y_DISTANCE
 
 
     # 再帰呼び出しで深く降りていく
