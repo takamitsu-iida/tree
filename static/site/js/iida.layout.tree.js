@@ -18,11 +18,14 @@
     //
     this.run = function() {
 
-      const cy = this.cy;
       const eles = this.eles;
 
       const root_id = this.options['root_id'];
       const root_node = root_id ? eles.getElementById(root_id) : eles.nodes().filter(node => is_root(node)).first();
+      if (root_node === undefined) {
+        console.error('root node is not found');
+        return;
+      }
 
       // set tree_parent, tree_children to each node
       eles.nodes().forEach(node => {
@@ -43,7 +46,7 @@
       // set y and depth
       calc_y_preorder(root_node);
 
-      // set x
+      // set x and mod
       calc_x_postorder(root_node);
 
       // fix x
@@ -59,7 +62,8 @@
       eles.nodes().layoutPositions(this, this.options, function (node, _index) {
         return { x: node.position().x, y: node.position().y };
       });
-      cy.fit();
+
+      // this.cy.fit();
 
       return this;
     }
@@ -97,15 +101,6 @@
       return parent_node.data('children').at(-1) == node.id();
     }
 
-    function get_siblings(node) {
-      if (is_root(node)) {
-        return [];
-      }
-      const parent_node = node.data('tree_parent');
-      const tree_children = parent_node.data('tree_children');
-      return tree_children.filter(child => child.id() !== node.id());
-    }
-
     function get_previous_sibling(node) {
       if (is_root(node)) {
         return undefined;
@@ -140,14 +135,6 @@
       return parent_node.data('tree_children').at(0);
     }
 
-    function get_right_most_sibling(node) {
-      if (is_root(node)) {
-        return undefined;
-      }
-      const parent_node = node.data('tree_parent');
-      return parent_node.data('tree_children').at(-1);
-    }
-
     function get_left_most_child(node) {
       if (is_leaf(node)) {
         return undefined;
@@ -162,20 +149,25 @@
       return node.data('tree_children').at(-1);
     }
 
+    //
+    // layout algorithm
+    //
+
     function calc_y_preorder(node, depth=0) {
       if (node === undefined) {
         return;
       }
 
+      // preorder process
+
       // set depth
       node.data('depth', depth);
-
-      const minimal_y_distance = self.options['minimal_y_distance'] || 100;
 
       // set y
       if (is_root(node)) {
         node.data('y', 0);
       } else {
+        const minimal_y_distance = self.options['minimal_y_distance'] || 100;
         const parent_node = node.data('tree_parent');
         node.data('y', parent_node.data('y') + minimal_y_distance);
       }
@@ -197,9 +189,7 @@
         calc_x_postorder(child_node);
       });
 
-      //
       // postorder process
-      //
 
       const minimal_x_distance = self.options['minimal_x_distance'] || 50;
 
@@ -250,10 +240,11 @@
 
 
     function get_left_countour(node, mod_sum=0.0, left_countour={}) {
-      // preorder traversal
       if (node === undefined) {
         return;
       }
+
+      // preorder traversal
 
       if (left_countour[node.data('depth')] === undefined) {
         left_countour[node.data('depth')] = node.data('x') + mod_sum;
@@ -270,10 +261,11 @@
 
 
     function get_right_contour(node, mod_sum=0.0, right_countour={}) {
-      // preorder traversal
       if (node === undefined) {
         return;
       }
+
+      // preorder traversal
 
       if (right_countour[node.data('depth')] === undefined) {
         right_countour[node.data('depth')] = node.data('x') + mod_sum;
@@ -296,7 +288,7 @@
       const right_node_left_countour = {};
       get_left_countour(right_node, 0.0, right_node_left_countour);
 
-      // change keys to integer
+      // change keys from string to integer
       const right_contour_depth_list = Object.keys(right_node_left_countour).map(s => parseInt(s));
       const left_contour_depth_list = Object.keys(left_node_right_countour).map(s => parseInt(s));
 
@@ -380,6 +372,8 @@
         return;
       }
 
+      // preorder process
+
       node.data('x', node.data('x') + mod_sum);
 
       mod_sum += node.data('mod');
@@ -392,8 +386,6 @@
         calc_x_preorder(child_node, mod_sum);
       });
     }
-
-
 
   }
 
