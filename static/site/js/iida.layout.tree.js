@@ -64,6 +64,7 @@
       });
 
       // this.cy.fit();
+      this.cy.center();
 
       return this;
     }
