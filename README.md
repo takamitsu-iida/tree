@@ -196,6 +196,10 @@ o   o
 つまりpreorder探索で実行します。
 
 ```python
+def reingold_tilford_preorder(node):
+    if node == None:
+        return
+
     if node.left != None:
         # 左の子の位置を決める
         node.left.x = node.left.relative_x + node.x
@@ -203,6 +207,10 @@ o   o
     if node.right != None:
         # 右の子の位置を決める
         node.right.x = node.right.relative_x + node.x
+
+    # 再帰呼び出しで深く降りていく
+    reingold_tilford_preorder(node.left)
+    reingold_tilford_preorder(node.right)
 ```
 
 <br>
