@@ -8,31 +8,30 @@
   }
 
   function iida_tree_layout(arguments) {
+    const self = this;
+
     this.options = arguments.options || {};
     this.cy = arguments.cy;
     this.eles = arguments.eles;
-    const self = this;
 
     //
     // run() is called when layout is created
     //
     this.run = function() {
 
-      const eles = this.eles;
-
       const root_id = this.options['root_id'];
-      const root_node = root_id ? eles.getElementById(root_id) : eles.nodes().filter(node => is_root(node)).first();
+      const root_node = root_id ? this.eles.getElementById(root_id) : this.eles.nodes().filter(node => is_root(node)).first();
       if (root_node === undefined) {
         console.error('root node is not found');
         return;
       }
 
       // set tree_parent, tree_children to each node
-      eles.nodes().forEach(node => {
+      this.eles.nodes().forEach(node => {
         node.data('tree_children', []);
 
         node.data('children').forEach(child_id => {
-          let child_node = eles.getElementById(child_id);
+          let child_node = this.eles.getElementById(child_id);
           if (child_node) {
             // set pointer to parent as "tree_parent"
             child_node.data('tree_parent', node);
@@ -53,13 +52,13 @@
       calc_x_preorder(root_node);
 
       // cleanup
-      eles.nodes().forEach(node => {
+      this.eles.nodes().forEach(node => {
         node.removeData('tree_parent');
         node.removeData('tree_children');
       });
 
       // run the layout
-      eles.nodes().layoutPositions(this, this.options, function (node, _index) {
+      this.eles.nodes().layoutPositions(this, this.options, function (node, _index) {
         return { x: node.position().x, y: node.position().y };
       });
 
@@ -159,8 +158,6 @@
         return;
       }
 
-      // preorder process
-
       // set depth
       node.data('depth', depth);
 
@@ -189,8 +186,6 @@
       node.data('tree_children').forEach(child_node => {
         calc_x_postorder(child_node);
       });
-
-      // postorder process
 
       const minimal_x_distance = self.options['minimal_x_distance'] || 50;
 
