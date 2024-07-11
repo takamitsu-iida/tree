@@ -52,11 +52,15 @@
       },
     ]
 
-    let LAYOUT_OPTIONS = {
+    let DEFAULT_LAYOUT_OPTIONS = {
       root_id: "root",
-      minimal_x_distance: 60,
+      horizontal: false,
+      minimal_x_distance: 80,
       minimal_y_distance: 80,
     };
+
+    const layout_options = {};
+    Object.assign(layout_options, DEFAULT_LAYOUT_OPTIONS);
 
     cytoscape.warnings(false);
     let cy = window.cy = cytoscape({
@@ -72,7 +76,7 @@
 
       layout: {
         name: "IIDA_TREE", // see iida.layout.tree.js
-        options: LAYOUT_OPTIONS
+        options: layout_options
       },
       // layout: { 'name': "preset" },
 
@@ -137,12 +141,15 @@
         switch (id) {
           case 'idData1':
             tree_nodes = iida.appdata.test_tree_1;
+            Object.assign(layout_options, { horizontal: false });
             break;
           case 'idData2':
             tree_nodes = iida.appdata.test_tree_2;
+            Object.assign(layout_options, { horizontal: false, minimal_x_distance: 80, minimal_y_distance: 120 });
             break;
           case 'idData3':
             tree_nodes = iida.appdata.test_tree_3;
+            Object.assign(layout_options, { horizontal: true, minimal_x_distance: 40, minimal_y_distance: 120 });
             break;
         }
 
@@ -156,7 +163,7 @@
         cy.add(iida.appdata.get_elements(tree_nodes));
 
         // layout again
-        cy.layout({ name: "IIDA_TREE", options: LAYOUT_OPTIONS }).run();
+        cy.layout({ name: "IIDA_TREE", options: layout_options }).run();
       });
     });
 

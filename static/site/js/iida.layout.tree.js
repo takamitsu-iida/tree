@@ -8,6 +8,7 @@
   }
 
   function iida_tree_layout(arguments) {
+
     const self = this;
 
     this.options = arguments.options || {};
@@ -26,7 +27,7 @@
         return;
       }
 
-      // set tree_parent, tree_children to each node
+      // set 'tree_parent' and 'tree_children' to each node
       this.eles.nodes().forEach(node => {
         node.data('tree_children', []);
 
@@ -51,6 +52,12 @@
       // fix x
       calc_x_preorder(root_node);
 
+      // set subtree info to drag subtree
+      cy_set_subtree_postorder(root_node);
+
+      // add cytoscape event handler
+      cy_add_event_handler();
+
       // cleanup
       this.eles.nodes().forEach(node => {
         node.removeData('tree_parent');
@@ -59,7 +66,12 @@
 
       // run the layout
       this.eles.nodes().layoutPositions(this, this.options, function (node, _index) {
-        return { x: node.position().x, y: node.position().y };
+        if (self.options['horizontal'] === true) {
+          node.data('initial_position', { x: node.data('y'), y: node.data('x') });
+          return node.data('initial_position');
+        }
+        node.data('initial_position', { x: node.data('x'), y: node.data('y') });
+        return node.data('initial_position');
       });
 
       // this.cy.fit();
@@ -68,7 +80,9 @@
       return this;
     }
 
+    //
     // stop() is called when layout is stopped
+    //
     this.stop = function () {
       return this;
     }
@@ -242,6 +256,11 @@
 
       // preorder traversal
 
+      // left_contour {
+      //   key: tree depth,
+      //   value: x position
+      // }
+
       if (left_countour[node.data('depth')] === undefined) {
         left_countour[node.data('depth')] = node.data('x') + mod_sum;
       } else {
@@ -291,12 +310,13 @@
       // get minimum depth
       const min_depth = Math.min(Math.max(...right_contour_depth_list), Math.max(...left_contour_depth_list));
 
-      let min_distance = Infinity;
+      // get minimum distance between two subtrees
+      const distance_list = [];
       for (depth = right_node.data('depth') + 1; depth <= min_depth; depth++) {
         const distance = right_node_left_countour[depth] - left_node_right_countour[depth];
-        min_distance = Math.min(min_distance, distance);
+        distance_list.push(distance);
       }
-      return min_distance;
+      return Math.min(...distance_list);
     }
 
 
@@ -363,6 +383,7 @@
       return false;
     }
 
+
     function calc_x_preorder(node, mod_sum=0.0) {
       if (node === undefined) {
         return;
@@ -370,18 +391,87 @@
 
       // preorder process
 
+      // x = x + mod_sum
       node.data('x', node.data('x') + mod_sum);
 
+      // mod_sum = mod_sum + mod
       mod_sum += node.data('mod');
+
+      // clear mod
       node.data('mod', 0);
 
+      // set position
       node.position({ x: node.data('x'), y: node.data('y') });
+
+      // set initial_position
       node.data('initial_position', { x: node.data('x'), y: node.data('y') });
 
+      // traverse children
       node.data('tree_children').forEach(child_node => {
         calc_x_preorder(child_node, mod_sum);
       });
     }
+
+    //
+    // cytoscape.js specific functions
+    //
+
+    function cy_set_subtree_postorder(node) {
+      if (node === undefined) {
+        return;
+      }
+
+      node.data('tree_children').forEach(child_node => {
+        cy_set_subtree_postorder(child_node);
+      });
+
+      // postorder process
+
+      node.data('subtree', []);
+
+      if (is_leaf(node)) {
+        return;
+      }
+
+      node.data('tree_children').forEach(child_node => {
+        node.data('subtree').push(child_node.id());
+        node.data('subtree').push(...child_node.data('subtree'));
+      });
+    }
+
+    function cy_add_event_handler() {
+
+      self.cy.nodes().on('grab', function (evt) {
+        // save position at the moment of grab
+        self.cy.nodes().forEach(function (node) {
+          node.data('grabbed_position', { x: node.position().x, y: node.position().y });
+        });
+      });
+
+      self.cy.nodes().on('drag', function (evt) {
+        // restore grabbed position
+        let grabbed_position = evt.target.data('grabbed_position');
+        if (!grabbed_position) {
+          return;
+        }
+
+        let delta_x = evt.target.position().x - grabbed_position.x;
+        let delta_y = evt.target.position().y - grabbed_position.y;
+
+        let drag_with_targets = evt.target.data('subtree') || [];
+        drag_with_targets.forEach(function (drag_target) {
+          let node = self.cy.getElementById(drag_target);
+          if (!node || node === evt.target) {
+            return;
+          }
+          node.position({ x: node.data('grabbed_position').x + delta_x, y: node.data('grabbed_position').y + delta_y });
+        });
+      });
+    }
+
+
+
+
 
   }
 
