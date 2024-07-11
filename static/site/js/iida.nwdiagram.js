@@ -11,16 +11,9 @@
     let cy_styles = [
 
       {
-        selector: ':parent',
-        style: {
-          'background-opacity': 0
-        }
-      },
-
-      {
         selector: 'node',
         style: {
-          'content': 'data(name)',
+          'content': 'data(label)',
           'text-opacity': 1.0,
           'opacity': 1.0,
           'text-valign': 'center',
@@ -34,7 +27,13 @@
         selector: 'edge',
         style: {
           'width': 1.6,
-          'curve-style': "straight", // "bezier", "taxi" "bezier" "segments",
+          'curve-style': "straight",
+          // 'curve-style': "bezier",
+          // 'curve-style': "unbundled-bezier",
+          // 'control-point-weights': '0.25 0.95',
+          // 'control-point-distances': '10 10',
+          // 'curve-style': "taxi",
+          // 'curve-style': "segments",
           'line-color': "#a9a9a9",  // darkgray
           // 'target-arrow-color': "#a9a9a9",  // darkgray
           // 'source-arrow-color': "#a9a9a9",  // darkgray
@@ -47,7 +46,7 @@
           // 'edge-text-rotation': "autorotate"
           // 'source-text-offset': 10,
           // 'target-text-offset': 10,
-          'z-index': 0
+          // 'z-index': 0
         }
       },
     ]

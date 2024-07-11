@@ -28,7 +28,6 @@
       node.grabbable = node.grabbable || true;
 
       node.data.label = node.data.label || node.data.id;
-      node.data.name = node.data.name || node.data.id;
       node.data.width = node.data.width || DEFAULT_NODE_WIDTH;
       node.data.height = node.data.height || DEFAULT_NODE_HEIGHT;
       node.data.children = node.data.children || [];
