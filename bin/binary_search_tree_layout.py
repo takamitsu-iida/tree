@@ -91,9 +91,11 @@ def print_binary_tree(root: BinaryTreeNode, level=0):
 def reingold_tilford_postorder(node):
     """postorder探索で末端ノードから順に、X軸方向の相対位置を決める
 
-    末端から決めていくのでX軸方向の位置を絶対座標で決めることはできず、上位ノードからの相対位置を決定する。
+    末端から決めていくのでX軸方向の位置を絶対座標で決めることはできない。
+    親ノードが子の位置を相対的な位置relative_xとして設定する。
     後ほどpreorder探索を実行し、上位ノードからの相対位置をもとにX軸方向の絶対位置を決定する。
-    各ノードで左輪郭、右輪郭を構築し、その輪郭を使ってサブツリー同士が重ならないように配置する。
+
+    末端から上に上がっていく際に、各ノードで左輪郭および右輪郭を構築し、その輪郭を使ってサブツリー同士が重ならないように配置する。
 
     Args:
         node (_type_): _description_
@@ -110,12 +112,13 @@ def reingold_tilford_postorder(node):
     # postorderの場合はここに処理を書く
     #
 
-    # 末端にたどり着いて、左にも右にも子がいない場合は何もせずに、ひとつ上の階層に戻る
-    # 自分の相対位置は親ノードによって後で決められる
+    # 末端にたどり着いた場合は何もせずに、ひとつ上の階層に戻る
+    # 自分の相対位置は親ノードによって後から決められる
     if node.left == None and node.right == None:
         return
 
-    # ここから先の処理は左か右に必ず子がいるので、子の位置を決めていく
+    # ここから先の処理は左か右に必ず子がいる
+    # 子の位置を自分からの相対位置で決めていく
 
     if node.left != None and node.right == None:
 
@@ -129,12 +132,12 @@ def reingold_tilford_postorder(node):
 
         # 自分の左輪郭を構築する
         # 左の子が持っている左輪郭をコピーして、先頭に自分の相対位置 0 を追加する
-        # ただし、左の子は相対位置を-1移動させたので、左輪郭も全て-1する
+        # ただし、左の子は相対位置を-1移動させたので、左輪郭の要素も全て-1する
         node.left_contour = [0] + [x + node.left.relative_x for x in node.left.left_contour]
 
         # 自分の右輪郭を構築する
         # 右に子がいないので、左の子が持っている右輪郭をコピーして、先頭に自分の相対位置 0 を追加する
-        # ただし、左の子は相対位置を-1移動させたので、左輪郭も全て-1する
+        # ただし、左の子は相対位置を-1移動させたので、左輪郭の要素も全て-1する
         node.right_contour = [0] + [x + node.left.relative_x for x in node.left.right_contour]
 
     elif node.right != None and node.left == None:
@@ -176,11 +179,11 @@ def reingold_tilford_postorder(node):
         #   - プラスであれば、左右のサブツリーが離れている
         # ということになる
         # 差の最小値を求める
-        minimum_distance = sys.maxsize
+        diff_list = []
         for i in range(minimum_height):
             diff = node.right.left_contour[i] - node.left.right_contour[i]
-            if diff < minimum_distance:
-                minimum_distance = diff
+            diff_list.append(diff)
+        minimum_distance = min(diff_list)
 
         # 最低限確保したい間隔
         minimal_distance = BinaryTreeNode.MINIMAL_X_DISTANCE
@@ -193,7 +196,7 @@ def reingold_tilford_postorder(node):
             shift_value = minimal_distance - minimum_distance
 
             # 左の子は左に、右の子は右に動かしたい
-            # 左右均等に動かすので、動かす量は2の倍数にする
+            # 左右均等に動かしたいので、動かす量は2の倍数にする
             if abs(shift_value) % 2 == 0:
                 # 偶数なので+2にすることで、左サブツリーは左に1、右サブツリーは右に1、というように均等にずらせる
                 shift_value = abs(shift_value) + BinaryTreeNode.MINIMAL_X_DISTANCE + BinaryTreeNode.MINIMAL_X_DISTANCE

@@ -2,21 +2,45 @@
 
 ツリーを綺麗にレイアウトするアルゴリズムとしてReingold-Tilfordがあります。
 
-参考文献
+<br>
 
-https://llimllib.github.io/pymag-trees/
+> [!NOTE] 参考文献
+>
+> https://llimllib.github.io/pymag-trees/
 
 <br>
 
-## 二分探索木(Binary Search Tree)
+Reingold-TilfordのPython実装とJavaScript実装です。
+
+<br><br>
+
+# ライブデモ
+
+JavaScript実装ではcytoscape.jsを使って可視化しています。
+
+こちらの[Live Demo](https://takamitsu-iida.github.io/tree/index.html)を参照。
+
+<br><br>
+
+# 実装メモ
+
+意外に参考になる文献や実装は少ないです。
+
+<br>
+
+## 二分探索木(Binary Search Tree)のレイアウト実装
 
 一般的なツリー構造の前に、二分探索木で考えます。
+
+二分探索木におけるレイアウト決定のPython実装
+
+[bin/binary_search_tree_layout.py](bin/binary_search_tree_layout.py)
 
 <br>
 
 ### 二分探索木とは
 
-> 参考文献
+> [!NOTE] 参考文献
 >
 > アルゴリズム図鑑 増補改訂版 石田保輝 宮崎修一著 翔泳社
 >

@@ -42,7 +42,17 @@
         .catch(error => {
           console.error(error);
         }),
-        fetch('data/test_tree_3.json', { mode: 'no-cors' })
+      fetch('data/test_tree_3.json', { mode: 'no-cors' })
+        .then(response => {
+          if (response.ok) {
+            return response.json()
+          }
+          return [];
+        })
+        .catch(error => {
+          console.error(error);
+        }),
+      fetch('data/test_tree_4.json', { mode: 'no-cors' })
         .then(response => {
           if (response.ok) {
             return response.json()
@@ -56,6 +66,7 @@
       iida.appdata.test_tree_1 = dataArray[0];
       iida.appdata.test_tree_2 = dataArray[1];
       iida.appdata.test_tree_3 = dataArray[2];
+      iida.appdata.test_tree_4 = dataArray[3];
 
       // see, iida.nwdiagram.js
       iida.nwdiagram();

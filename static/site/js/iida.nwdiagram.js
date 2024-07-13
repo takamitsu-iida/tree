@@ -127,7 +127,7 @@
       });
     };
 
-    ['idData1', 'idData2', 'idData3'].forEach(id => {
+    ['idData1', 'idData2', 'idData3', 'idData4'].forEach(id => {
       let tag = document.getElementById(id);
       if (!tag) { return; }
       tag.addEventListener('click', function (evt) {
@@ -152,7 +152,11 @@
             tree_nodes = iida.appdata.test_tree_3;
             Object.assign(layout_options, { horizontal: true, minimal_x_distance: 40, minimal_y_distance: 120 });
             break;
-        }
+          case 'idData4':
+              tree_nodes = iida.appdata.test_tree_4;
+              Object.assign(layout_options, { minimal_x_distance: 40, minimal_y_distance: 120 });
+              break;
+          }
 
         // remove all elements
         cy.elements().remove();
