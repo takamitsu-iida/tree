@@ -43,7 +43,8 @@
           data: {
             'id': node.data.id + '-' + child_id,
             'source': node.data.id,
-            'target': child_id
+            'target': child_id,
+            'control_point_distances': "0 0"
           }
         };
 

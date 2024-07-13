@@ -27,11 +27,16 @@
         selector: 'edge',
         style: {
           'width': 1.6,
-          'curve-style': "straight",
+          // 'curve-style': "straight",
+          //
           // 'curve-style': "bezier",
-          // 'curve-style': "unbundled-bezier",
-          // 'control-point-weights': '0.25 0.95',
-          // 'control-point-distances': '10 10',
+          // 'control-point-weight': 0.1,
+          // 'control-point-step-size': 1,
+          //
+          'curve-style': "unbundled-bezier",
+          'control-point-weights': "0.2 0.8",
+          'control-point-distances': "data(control_point_distances)",
+          //
           // 'curve-style': "taxi",
           // 'curve-style': "segments",
           'line-color': "#a9a9a9",  // darkgray
@@ -58,9 +63,6 @@
       minimal_y_distance: 80,
     };
 
-    const layout_options = {};
-    Object.assign(layout_options, DEFAULT_LAYOUT_OPTIONS);
-
     cytoscape.warnings(false);
     let cy = window.cy = cytoscape({
       container: document.getElementById('cy'),
@@ -75,7 +77,7 @@
 
       layout: {
         name: "IIDA_TREE", // see iida.layout.tree.js
-        options: layout_options
+        options: DEFAULT_LAYOUT_OPTIONS
       },
       // layout: { 'name': "preset" },
 
@@ -136,15 +138,15 @@
         });
         evt.target.classList.add('active');
 
+        let layout_options = Object.assign({}, DEFAULT_LAYOUT_OPTIONS);
         let tree_nodes;
         switch (id) {
           case 'idData1':
             tree_nodes = iida.appdata.test_tree_1;
-            Object.assign(layout_options, { horizontal: false });
             break;
           case 'idData2':
             tree_nodes = iida.appdata.test_tree_2;
-            Object.assign(layout_options, { horizontal: false, minimal_x_distance: 80, minimal_y_distance: 120 });
+            Object.assign(layout_options, { minimal_x_distance: 80, minimal_y_distance: 120 });
             break;
           case 'idData3':
             tree_nodes = iida.appdata.test_tree_3;

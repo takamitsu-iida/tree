@@ -67,12 +67,17 @@
       // run the layout
       this.eles.nodes().layoutPositions(this, this.options, function (node, _index) {
         if (self.options['horizontal'] === true) {
+          node.position({ x: node.data('y'), y: node.data('x') });
           node.data('initial_position', { x: node.data('y'), y: node.data('x') });
-          return node.data('initial_position');
+          return node.position();
         }
+        node.position({ x: node.data('x'), y: node.data('y') });
         node.data('initial_position', { x: node.data('x'), y: node.data('y') });
-        return node.data('initial_position');
+        return node.position();
       });
+
+      // set edge bezier parameter
+      this.eles.edges().forEach(edge => set_control_point_distances(edge));
 
       // this.cy.fit();
       this.cy.center();
@@ -466,12 +471,51 @@
           }
           node.position({ x: node.data('grabbed_position').x + delta_x, y: node.data('grabbed_position').y + delta_y });
         });
+
+        // set edge bezier parameter
+        const edges = evt.target.connectedEdges();
+        edges.forEach(edge => {
+          set_control_point_distances(edge);
+        });
+
       });
+
     }
 
 
+    function set_control_point_distances(edge) {
 
+      if (self.options['horizontal'] === true) {
+        //           target
+        //           o
+        //          /*
+        //        */
+        // source o
+        //        *\
+        //          \*
+        //           o
+        //           target
 
+        const edge_vertical_length = edge.source().renderedPosition().y - edge.target().renderedPosition().y;
+        const decrease_factor = 0.1;
+        const control_point_distance = edge_vertical_length * decrease_factor;
+        const control_point_distances = [control_point_distance, -1 * control_point_distance];
+        edge.data('control_point_distances', control_point_distances.join(' '));
+      } else {
+        //    source    source
+        //    o         o
+        //  */           \*
+        //  /*           *\
+        // o               o
+        // target          target
+
+        const edge_holizontal_length = edge.source().renderedPosition().x - edge.target().renderedPosition().x;
+        const decrease_factor = 0.1;
+        const control_point_distance = edge_holizontal_length * decrease_factor;
+        const control_point_distances = [-1 * control_point_distance, control_point_distance];
+        edge.data('control_point_distances', control_point_distances.join(' '));
+      }
+    }
 
   }
 
