@@ -4,7 +4,9 @@
 
 <br>
 
-> [!NOTE] 参考文献
+> [!NOTE]
+>
+>  参考文献
 >
 > https://llimllib.github.io/pymag-trees/
 
@@ -40,7 +42,9 @@ JavaScript実装ではcytoscape.jsを使って可視化しています。
 
 ### 二分探索木とは
 
-> [!NOTE] 参考文献
+> [!NOTE]
+>
+> 参考文献
 >
 > アルゴリズム図鑑 増補改訂版 石田保輝 宮崎修一著 翔泳社
 >
