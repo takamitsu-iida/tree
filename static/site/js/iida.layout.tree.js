@@ -1,6 +1,8 @@
 /* global cytoscape */
 
-// 5 stage clos layout
+//
+// iida_tree_layout
+//
 (function () {
 
   if (!cytoscape) {
