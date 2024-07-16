@@ -555,6 +555,12 @@ def save_png(node, filename):
     plt.cla()
 
 
+def calc_tree_position(tree : TreeNode):
+    calc_y_preorder(tree)
+    calc_x_postorder(tree)
+    calc_x_preorder(tree)
+
+
 if __name__ == '__main__':
 
     def create_test_TreeNode():
@@ -681,9 +687,7 @@ if __name__ == '__main__':
         return trees
 
     def test_tree(tree, filename):
-        calc_y_preorder(tree)
-        calc_x_postorder(tree)
-        calc_x_preorder(tree)
+        calc_tree_position(tree)
         dump_tree(tree)
         save_png(tree, filename)
 

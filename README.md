@@ -246,6 +246,14 @@ def reingold_tilford_preorder(node):
 
 [bin/binary_search_tree_layout.py](/bin/binary_search_tree_layout.py) は二分探索木をReingold-Tilfordアルゴリズムで位置決めするスクリプトです。
 
+<br>
+
+> [!NOTE]
+>
+> Pythonスクリプトでは networkx および matplotlib を使って画像を出力しています。
+
+<br>
+
 二分探索木に `[15, 9, 23, 3, 12, 17, 28, 8]` の入力を与えたとき、
 下記のような描画結果が得られます。
 
