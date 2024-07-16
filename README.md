@@ -1,6 +1,8 @@
 # Tree Layout
 
-ツリーを綺麗にレイアウトするアルゴリズムとしてReingold-Tilfordがあります。
+ツリーを綺麗にレイアウトするアルゴリズムにReingold-Tilfordがあります。
+
+Reingold-TilfordをPythonおよびJavaScriptで実装したものです。
 
 <br>
 
@@ -10,9 +12,6 @@
 >
 > https://llimllib.github.io/pymag-trees/
 
-<br>
-
-Reingold-TilfordのPython実装とJavaScript実装です。
 
 <br><br>
 
@@ -279,3 +278,44 @@ def reingold_tilford_preorder(node):
 下記のような描画結果が得られます。
 
 ![例](/asset/binary_search_tree_4.png)
+
+
+<br><br><br>
+
+## 一般的なツリー構造での位置決めの例
+
+基本的な考え方は二分探索木の場合と同じです。
+
+自分よりも左にいる兄弟の右輪郭と、自分自身の左輪郭を比較して、重なっていれば自分を右に動かす、という戦略です。
+
+![例](/asset/tree_1.png)
+
+<br>
+
+![例](/asset/tree_2.png)
+
+<br>
+
+![例](/asset/tree_3.png)
+
+<br>
+
+![例](/asset/tree_4.png)
+
+<br>
+
+![例](/asset/tree_5.png)
+
+<br>
+
+![例](/asset/tree_6.png)
+
+<br>
+
+![例](/asset/tree_7.png)
+
+<br>
+
+![例](/asset/tree_8.png)
+
+<br>
